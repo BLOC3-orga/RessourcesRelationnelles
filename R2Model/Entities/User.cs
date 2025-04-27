@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.Data;
 
 namespace R2Model.Entities;
 
@@ -18,5 +19,10 @@ public class User
     public int RoleId { get; set; }
     public virtual Role? Role { get; set; }
 
-    // ajouter les attributs liés aux autres entités (ex: List<Ressource>)
+    public ICollection<Ressource>? FavoritesRessources { get; set; } = null!;
+    public ICollection<Ressource>? ExploitedRessources { get; set; } = null!;
+    public ICollection<Ressource>? Draftressources { get; set; } = null!;
+    public ICollection<Ressource>? CreatedRessources { get; set; } = null!;
+    public ICollection<Comment>? Comments { get; set; } = null!;
+
 }
