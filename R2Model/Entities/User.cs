@@ -1,9 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
+using System.Data.Common;
+using Microsoft.AspNetCore.Identity;
 
 namespace R2Model.Entities;
 
-public class User
+public class User : IdentityUser
 {
     public int Id { get; set; }
     public string Name { get; set; } = null!;
