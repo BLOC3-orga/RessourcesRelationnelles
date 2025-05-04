@@ -1,14 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace R2Model.Entities;
 
-namespace R2Model.Entities
+public class Comment
 {
-    public class Comment
-    {
-        public int Id { get; set; }
-        public string Content { get; set; }
-    }
+    public int Id { get; set; }
+    public string Content { get; set; } = null!;
 }

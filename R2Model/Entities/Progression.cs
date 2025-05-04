@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using R2Model.Enums;
 
-namespace R2Model.Entities
+namespace R2Model.Entities;
+
+public class Progression
 {
-    public class Progression
-    {
-        public int Id { get; set; }
-        public float Percentage { get; set; }
-        public DateTime LastInteractionDate { get; set; }
-    }
+    public int Id { get; set; }
+    public float Percentage { get; set; }
+    public DateTime LastInteractionDate { get; set; }
+    public ProgressionStatus Status { get; set; }
 }
