@@ -1,0 +1,36 @@
+﻿@page "/comments"
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using R2Model.Entities
+@using R2Model.Context
+@implements IAsyncDisposable
+@inject IDbContextFactory<R2Model.Context.R2DbContext> DbFactory
+
+<PageTitle>Index</PageTitle>
+
+<h1>Index</h1>
+
+<p>
+    <a href="comments/create">Create New</a>
+</p>
+
+<QuickGrid Class="table" Items="context.Comments">
+    <PropertyColumn Property="comment => comment.Content" />
+
+    <TemplateColumn Context="comment">
+        <a href="@($"comments/edit?id={comment.Id}")">Edit</a> |
+        <a href="@($"comments/details?id={comment.Id}")">Details</a> |
+        <a href="@($"comments/delete?id={comment.Id}")">Delete</a>
+    </TemplateColumn>
+</QuickGrid>
+
+@code {
+    private R2DbContext context = default!;
+
+    protected override void OnInitialized()
+    {
+        context = DbFactory.CreateDbContext();
+    }
+
+    public async ValueTask DisposeAsync() => await context.DisposeAsync();
+}
