@@ -1,0 +1,69 @@
+﻿@page "/resources/create"
+@using Microsoft.EntityFrameworkCore
+@using R2Model.Entities
+@inject IDbContextFactory<R2Model.Context.R2DbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Create</PageTitle>
+
+<h1>Create</h1>
+
+<h2>Resource</h2>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <EditForm method="post" Model="Resource" OnValidSubmit="AddResource" FormName="create" Enhance>
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" role="alert"/>
+            <div class="mb-3">
+                <label for="name" class="form-label">Name:</label> 
+                <InputText id="name" @bind-Value="Resource.Name" class="form-control" /> 
+                <ValidationMessage For="() => Resource.Name" class="text-danger" /> 
+            </div>        
+            <div class="mb-3">
+                <label for="description" class="form-label">Description:</label> 
+                <InputText id="description" @bind-Value="Resource.Description" class="form-control" /> 
+                <ValidationMessage For="() => Resource.Description" class="text-danger" /> 
+            </div>        
+            <div class="mb-3">
+                <label for="creationdate" class="form-label">CreationDate:</label> 
+                <InputDate id="creationdate" @bind-Value="Resource.CreationDate" class="form-control" /> 
+                <ValidationMessage For="() => Resource.CreationDate" class="text-danger" /> 
+            </div>        
+            <div class="mb-3">
+                <label for="type" class="form-label">Type:</label> 
+                <InputSelect id="type" @bind-Value="Resource.Type" class="form-control" /> 
+                <ValidationMessage For="() => Resource.Type" class="text-danger" /> 
+            </div>        
+            <div class="mb-3">
+                <label for="status" class="form-label">Status:</label> 
+                <InputSelect id="status" @bind-Value="Resource.Status" class="form-control" /> 
+                <ValidationMessage For="() => Resource.Status" class="text-danger" /> 
+            </div>        
+            <div class="mb-3">
+                <label for="categoryid" class="form-label">CategoryId:</label> 
+                <InputNumber id="categoryid" @bind-Value="Resource.CategoryId" class="form-control" /> 
+                <ValidationMessage For="() => Resource.CategoryId" class="text-danger" /> 
+            </div>        
+            <button type="submit" class="btn btn-primary">Create</button>
+        </EditForm>
+    </div>
+</div>
+
+<div>
+    <a href="/resources">Back to List</a>
+</div>
+
+@code {
+    [SupplyParameterFromForm]
+    private Resource Resource { get; set; } = new();
+
+    // To protect from overposting attacks, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
+    private async Task AddResource()
+    {
+        using var context = DbFactory.CreateDbContext();
+        context.Ressources.Add(Resource);
+        await context.SaveChangesAsync();
+        NavigationManager.NavigateTo("/resources");
+    }
+}
