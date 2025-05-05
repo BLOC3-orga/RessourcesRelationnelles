@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using R2Model.Context;
 
@@ -11,9 +12,11 @@ using R2Model.Context;
 namespace R2Model.Migrations
 {
     [DbContext(typeof(R2DbContext))]
-    partial class R2DbContextModelSnapshot : ModelSnapshot
+    [Migration("20250505200529_initial-create")]
+    partial class initialcreate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -364,6 +367,10 @@ namespace R2Model.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<string>("Password")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("PasswordHash")
                         .HasColumnType("nvarchar(max)");
 
@@ -503,19 +510,19 @@ namespace R2Model.Migrations
                         .HasForeignKey("StatisticId");
 
                     b.HasOne("R2Model.Entities.User", null)
-                        .WithMany("CreatedResources")
+                        .WithMany("CreatedRessources")
                         .HasForeignKey("UserId");
 
                     b.HasOne("R2Model.Entities.User", null)
-                        .WithMany("DraftResources")
+                        .WithMany("Draftressources")
                         .HasForeignKey("UserId1");
 
                     b.HasOne("R2Model.Entities.User", null)
-                        .WithMany("ExploitedResources")
+                        .WithMany("ExploitedRessources")
                         .HasForeignKey("UserId2");
 
                     b.HasOne("R2Model.Entities.User", null)
-                        .WithMany("FavoriteResources")
+                        .WithMany("FavoritesRessources")
                         .HasForeignKey("UserId3");
 
                     b.Navigation("Category");
@@ -559,13 +566,13 @@ namespace R2Model.Migrations
                 {
                     b.Navigation("Comments");
 
-                    b.Navigation("CreatedResources");
+                    b.Navigation("CreatedRessources");
 
-                    b.Navigation("DraftResources");
+                    b.Navigation("Draftressources");
 
-                    b.Navigation("ExploitedResources");
+                    b.Navigation("ExploitedRessources");
 
-                    b.Navigation("FavoriteResources");
+                    b.Navigation("FavoritesRessources");
                 });
 #pragma warning restore 612, 618
         }

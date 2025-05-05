@@ -12,8 +12,8 @@ using R2Model.Context;
 namespace R2Model.Migrations
 {
     [DbContext(typeof(R2DbContext))]
-    [Migration("20250504193628_Initial")]
-    partial class Initial
+    [Migration("20250505201204_fixusers")]
+    partial class fixusers
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -367,10 +367,6 @@ namespace R2Model.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
-                    b.Property<string>("Password")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("PasswordHash")
                         .HasColumnType("nvarchar(max)");
 
@@ -510,19 +506,19 @@ namespace R2Model.Migrations
                         .HasForeignKey("StatisticId");
 
                     b.HasOne("R2Model.Entities.User", null)
-                        .WithMany("CreatedRessources")
+                        .WithMany("CreatedResources")
                         .HasForeignKey("UserId");
 
                     b.HasOne("R2Model.Entities.User", null)
-                        .WithMany("Draftressources")
+                        .WithMany("DraftResources")
                         .HasForeignKey("UserId1");
 
                     b.HasOne("R2Model.Entities.User", null)
-                        .WithMany("ExploitedRessources")
+                        .WithMany("ExploitedResources")
                         .HasForeignKey("UserId2");
 
                     b.HasOne("R2Model.Entities.User", null)
-                        .WithMany("FavoritesRessources")
+                        .WithMany("FavoriteResources")
                         .HasForeignKey("UserId3");
 
                     b.Navigation("Category");
@@ -566,13 +562,13 @@ namespace R2Model.Migrations
                 {
                     b.Navigation("Comments");
 
-                    b.Navigation("CreatedRessources");
+                    b.Navigation("CreatedResources");
 
-                    b.Navigation("Draftressources");
+                    b.Navigation("DraftResources");
 
-                    b.Navigation("ExploitedRessources");
+                    b.Navigation("ExploitedResources");
 
-                    b.Navigation("FavoritesRessources");
+                    b.Navigation("FavoriteResources");
                 });
 #pragma warning restore 612, 618
         }
