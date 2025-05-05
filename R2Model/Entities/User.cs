@@ -5,9 +5,11 @@ namespace R2Model.Entities;
 
 public class User : IdentityUser
 {
+    // Ces propriétés sont déjà dans IdentityUser : UserName, Email, PasswordHash
+    // Donc on évite de redéfinir "Password" qui pourrait créer des conflits
+
     public string Name { get; set; } = null!;
     public string LastName { get; set; } = null!;
-    public string Password { get; set; } = null!;
     public string Pseudo { get; set; } = null!;
     public string City { get; set; } = string.Empty;
     public string Address { get; set; } = string.Empty;
@@ -17,10 +19,9 @@ public class User : IdentityUser
     public int RoleId { get; set; }
     public virtual Role? Role { get; set; }
 
-    public ICollection<Resource>? FavoritesRessources { get; set; } = null!;
-    public ICollection<Resource>? ExploitedRessources { get; set; } = null!;
-    public ICollection<Resource>? Draftressources { get; set; } = null!;
-    public ICollection<Resource>? CreatedRessources { get; set; } = null!;
-    public ICollection<Comment>? Comments { get; set; } = null!;
-
+    public ICollection<Resource>? FavoriteResources { get; set; }
+    public ICollection<Resource>? ExploitedResources { get; set; }
+    public ICollection<Resource>? DraftResources { get; set; }
+    public ICollection<Resource>? CreatedResources { get; set; }
+    public ICollection<Comment>? Comments { get; set; }
 }
