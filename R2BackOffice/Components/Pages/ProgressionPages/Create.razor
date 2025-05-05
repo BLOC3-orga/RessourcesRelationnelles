@@ -1,0 +1,60 @@
+﻿@page "/progressions/create"
+@using Microsoft.EntityFrameworkCore
+@using R2Model.Entities
+@using R2Model.Enums
+@inject IDbContextFactory<R2Model.Context.R2DbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Create</PageTitle>
+
+<h1>Create</h1>
+
+<h2>Progression</h2>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <EditForm method="post" Model="Progression" OnValidSubmit="AddProgression" FormName="create" Enhance>
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" role="alert" />
+            <div class="mb-3">
+                <label for="percentage" class="form-label">Percentage:</label>
+                <InputNumber id="percentage" @bind-Value="Progression.Percentage" class="form-control" />
+                <ValidationMessage For="@(() => Progression.Percentage)" class="text-danger" />
+            </div>
+            <div class="mb-3">
+                <label for="lastinteractiondate" class="form-label">LastInteractionDate:</label>
+                <InputDate id="lastinteractiondate" @bind-Value="Progression.LastInteractionDate" class="form-control" />
+                <ValidationMessage For="@(() => Progression.LastInteractionDate)" class="text-danger" />
+            </div>
+            <div class="mb-3">
+                <label for="status" class="form-label">Status:</label>
+                <InputSelect id="status" @bind-Value="Progression.Status" class="form-control">
+                    @foreach (var status in Enum.GetValues(typeof(ProgressionStatus)))
+                    {
+                        <option value="@status">@status</option>
+                    }
+                </InputSelect>
+                <ValidationMessage For="@(() => Progression.Status)" class="text-danger" />
+            </div>
+            <button type="submit" class="btn btn-primary">Create</button>
+        </EditForm>
+    </div>
+</div>
+
+<div>
+    <a href="/progressions">Back to List</a>
+</div>
+
+@code {
+    [SupplyParameterFromForm]
+    private Progression Progression { get; set; } = new();
+
+    // To protect from overposting attacks, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
+    private async Task AddProgression()
+    {
+        using var context = DbFactory.CreateDbContext();
+        context.Progressions.Add(Progression);
+        await context.SaveChangesAsync();
+        NavigationManager.NavigateTo("/progressions");
+    }
+}

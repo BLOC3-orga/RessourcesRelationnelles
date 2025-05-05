@@ -1,0 +1,117 @@
+﻿@page "/progressions/edit"
+@using Microsoft.EntityFrameworkCore
+@using R2Model.Entities
+@using R2Model.Enums
+@inject IDbContextFactory<R2Model.Context.R2DbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Edit</PageTitle>
+
+<h1>Edit</h1>
+
+<h2>Progression</h2>
+<hr />
+@if (Progression is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-4">
+            <EditForm method="post" Model="Progression" OnValidSubmit="UpdateProgression" FormName="edit" Enhance>
+                <DataAnnotationsValidator />
+                <ValidationSummary role="alert" />
+                <input type="hidden" name="Progression.Id" value="@Progression.Id" />
+                <div class="mb-3">
+                    <label for="percentage" class="form-label">Percentage:</label>
+                    <InputNumber id="percentage" @bind-Value="Progression.Percentage" class="form-control" />
+                    <ValidationMessage For="@(() => Progression.Percentage)" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="lastinteractiondate" class="form-label">LastInteractionDate:</label>
+                    <InputDate id="lastinteractiondate" @bind-Value="Progression.LastInteractionDate" class="form-control" />
+                    <ValidationMessage For="@(() => Progression.LastInteractionDate)" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="status" class="form-label">Status:</label>
+                    <InputSelect id="status" @bind-Value="Progression.Status" class="form-control">
+                        @foreach (ProgressionStatus status in Enum.GetValues(typeof(ProgressionStatus)))
+                        {
+                            <option value="@status">@GetStatusDisplayName(status)</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="@(() => Progression.Status)" class="text-danger" />
+                </div>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </EditForm>
+        </div>
+    </div>
+}
+
+<div>
+    <a href="/progressions">Back to List</a>
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    [SupplyParameterFromForm]
+    private Progression? Progression { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        Progression ??= await context.Progressions.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (Progression is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+
+    // To protect from overposting attacks, enable the specific properties you want to bind to.
+    // For more information, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
+    private async Task UpdateProgression()
+    {
+        using var context = DbFactory.CreateDbContext();
+        context.Attach(Progression!).State = EntityState.Modified;
+
+        try
+        {
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!ProgressionExists(Progression!.Id))
+            {
+                NavigationManager.NavigateTo("notfound");
+            }
+            else
+            {
+                throw;
+            }
+        }
+
+        NavigationManager.NavigateTo("/progressions");
+    }
+
+    private bool ProgressionExists(int id)
+    {
+        using var context = DbFactory.CreateDbContext();
+        return context.Progressions.Any(e => e.Id == id);
+    }
+
+    private string GetStatusDisplayName(ProgressionStatus status)
+    {
+        return status switch
+        {
+            ProgressionStatus.NotStarted => "Non commencé",
+            ProgressionStatus.InProgress => "En cours",
+            ProgressionStatus.Completed => "Terminé",
+            _ => status.ToString()
+        };
+    }
+}
+}

@@ -1,0 +1,48 @@
+﻿@page "/statistics/details"
+@using Microsoft.EntityFrameworkCore
+@using R2Model.Entities
+@inject IDbContextFactory<R2Model.Context.R2DbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Details</PageTitle>
+
+<h1>Details</h1>
+
+<div>
+    <h2>Statistic</h2>
+    <hr />
+    @if (statistic is null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else {
+        <dl class="row">
+            <dt class="col-sm-2">RessourcesRead</dt>
+            <dd class="col-sm-10">@statistic.RessourcesRead</dd>
+            <dt class="col-sm-2">RessourcesCreated</dt>
+            <dd class="col-sm-10">@statistic.RessourcesCreated</dd>
+        </dl>
+        <div>
+            <a href="@($"/statistics/edit?id={statistic.Id}")">Edit</a> |
+            <a href="@($"/statistics")">Back to List</a>
+        </div>
+    }
+</div>
+
+@code {
+    private Statistic? statistic;
+
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        statistic = await context.Statistics.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (statistic is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+}

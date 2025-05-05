@@ -1,0 +1,50 @@
+﻿@page "/progressions/details"
+@using Microsoft.EntityFrameworkCore
+@using R2Model.Entities
+@inject IDbContextFactory<R2Model.Context.R2DbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Details</PageTitle>
+
+<h1>Details</h1>
+
+<div>
+    <h2>Progression</h2>
+    <hr />
+    @if (progression is null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else {
+        <dl class="row">
+            <dt class="col-sm-2">Percentage</dt>
+            <dd class="col-sm-10">@progression.Percentage</dd>
+            <dt class="col-sm-2">LastInteractionDate</dt>
+            <dd class="col-sm-10">@progression.LastInteractionDate</dd>
+            <dt class="col-sm-2">Status</dt>
+            <dd class="col-sm-10">@progression.Status</dd>
+        </dl>
+        <div>
+            <a href="@($"/progressions/edit?id={progression.Id}")">Edit</a> |
+            <a href="@($"/progressions")">Back to List</a>
+        </div>
+    }
+</div>
+
+@code {
+    private Progression? progression;
+
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        progression = await context.Progressions.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (progression is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+}

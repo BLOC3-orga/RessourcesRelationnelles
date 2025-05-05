@@ -1,0 +1,37 @@
+﻿@page "/statistics"
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using R2Model.Entities
+@using R2Model.Context
+@implements IAsyncDisposable
+@inject IDbContextFactory<R2Model.Context.R2DbContext> DbFactory
+
+<PageTitle>Index</PageTitle>
+
+<h1>Index</h1>
+
+<p>
+    <a href="statistics/create">Create New</a>
+</p>
+
+<QuickGrid Class="table" Items="context.Statistics">
+    <PropertyColumn Property="statistic => statistic.RessourcesRead" />
+    <PropertyColumn Property="statistic => statistic.RessourcesCreated" />
+
+    <TemplateColumn Context="statistic">
+        <a href="@($"statistics/edit?id={statistic.Id}")">Edit</a> |
+        <a href="@($"statistics/details?id={statistic.Id}")">Details</a> |
+        <a href="@($"statistics/delete?id={statistic.Id}")">Delete</a>
+    </TemplateColumn>
+</QuickGrid>
+
+@code {
+    private R2DbContext context = default!;
+
+    protected override void OnInitialized()
+    {
+        context = DbFactory.CreateDbContext();
+    }
+
+    public async ValueTask DisposeAsync() => await context.DisposeAsync();
+}

@@ -1,0 +1,38 @@
+﻿@page "/progressions"
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using R2Model.Entities
+@using R2Model.Context
+@implements IAsyncDisposable
+@inject IDbContextFactory<R2Model.Context.R2DbContext> DbFactory
+
+<PageTitle>Index</PageTitle>
+
+<h1>Index</h1>
+
+<p>
+    <a href="progressions/create">Create New</a>
+</p>
+
+<QuickGrid Class="table" Items="context.Progressions">
+    <PropertyColumn Property="progression => progression.Percentage" />
+    <PropertyColumn Property="progression => progression.LastInteractionDate" />
+    <PropertyColumn Property="progression => progression.Status" />
+
+    <TemplateColumn Context="progression">
+        <a href="@($"progressions/edit?id={progression.Id}")">Edit</a> |
+        <a href="@($"progressions/details?id={progression.Id}")">Details</a> |
+        <a href="@($"progressions/delete?id={progression.Id}")">Delete</a>
+    </TemplateColumn>
+</QuickGrid>
+
+@code {
+    private R2DbContext context = default!;
+
+    protected override void OnInitialized()
+    {
+        context = DbFactory.CreateDbContext();
+    }
+
+    public async ValueTask DisposeAsync() => await context.DisposeAsync();
+}

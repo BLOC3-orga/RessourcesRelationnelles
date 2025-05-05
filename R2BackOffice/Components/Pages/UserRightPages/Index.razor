@@ -1,0 +1,36 @@
+﻿@page "/userrights"
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using R2Model.Entities
+@using R2Model.Context
+@implements IAsyncDisposable
+@inject IDbContextFactory<R2Model.Context.R2DbContext> DbFactory
+
+<PageTitle>Index</PageTitle>
+
+<h1>Index</h1>
+
+<p>
+    <a href="userrights/create">Create New</a>
+</p>
+
+<QuickGrid Class="table" Items="context.UserRights">
+    <PropertyColumn Property="userright => userright.Label" />
+
+    <TemplateColumn Context="userright">
+        <a href="@($"userrights/edit?id={userright.Id}")">Edit</a> |
+        <a href="@($"userrights/details?id={userright.Id}")">Details</a> |
+        <a href="@($"userrights/delete?id={userright.Id}")">Delete</a>
+    </TemplateColumn>
+</QuickGrid>
+
+@code {
+    private R2DbContext context = default!;
+
+    protected override void OnInitialized()
+    {
+        context = DbFactory.CreateDbContext();
+    }
+
+    public async ValueTask DisposeAsync() => await context.DisposeAsync();
+}

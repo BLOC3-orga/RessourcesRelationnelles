@@ -1,0 +1,89 @@
+﻿@page "/userrights/edit"
+@using Microsoft.EntityFrameworkCore
+@using R2Model.Entities
+@inject IDbContextFactory<R2Model.Context.R2DbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Edit</PageTitle>
+
+<h1>Edit</h1>
+
+<h2>UserRight</h2>
+<hr />
+@if (UserRight is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-4">
+            <EditForm method="post" Model="UserRight" OnValidSubmit="UpdateUserRight" FormName="edit" Enhance>
+                <DataAnnotationsValidator />
+                <ValidationSummary role="alert"/>
+                <input type="hidden" name="UserRight.Id" value="@UserRight.Id" />
+                <div class="mb-3">
+                    <label for="label" class="form-label">Label:</label>
+                    <InputText id="label" @bind-Value="UserRight.Label" class="form-control" />
+                    <ValidationMessage For="() => UserRight.Label" class="text-danger" />
+                </div>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </EditForm>
+        </div>
+    </div>
+}
+
+<div>
+    <a href="/userrights">Back to List</a>
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    [SupplyParameterFromForm]
+    private UserRight? UserRight { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        UserRight ??= await context.UserRights.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (UserRight is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+
+    // To protect from overposting attacks, enable the specific properties you want to bind to.
+    // For more information, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
+    private async Task UpdateUserRight()
+    {
+        using var context = DbFactory.CreateDbContext();
+        context.Attach(UserRight!).State = EntityState.Modified;
+
+        try
+        {
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!UserRightExists(UserRight!.Id))
+            {
+                NavigationManager.NavigateTo("notfound");
+            }
+            else
+            {
+                throw;
+            }
+        }
+
+        NavigationManager.NavigateTo("/userrights");
+    }
+
+    private bool UserRightExists(int id)
+    {
+        using var context = DbFactory.CreateDbContext();
+        return context.UserRights.Any(e => e.Id == id);
+    }
+}

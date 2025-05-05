@@ -1,0 +1,46 @@
+﻿@page "/userrights/details"
+@using Microsoft.EntityFrameworkCore
+@using R2Model.Entities
+@inject IDbContextFactory<R2Model.Context.R2DbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Details</PageTitle>
+
+<h1>Details</h1>
+
+<div>
+    <h2>UserRight</h2>
+    <hr />
+    @if (userright is null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else {
+        <dl class="row">
+            <dt class="col-sm-2">Label</dt>
+            <dd class="col-sm-10">@userright.Label</dd>
+        </dl>
+        <div>
+            <a href="@($"/userrights/edit?id={userright.Id}")">Edit</a> |
+            <a href="@($"/userrights")">Back to List</a>
+        </div>
+    }
+</div>
+
+@code {
+    private UserRight? userright;
+
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        userright = await context.UserRights.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (userright is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+}
