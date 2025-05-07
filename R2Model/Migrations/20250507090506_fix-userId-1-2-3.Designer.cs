@@ -12,8 +12,8 @@ using R2Model.Context;
 namespace R2Model.Migrations
 {
     [DbContext(typeof(R2DbContext))]
-    [Migration("20250505201204_fixusers")]
-    partial class fixusers
+    [Migration("20250507090506_fix-userId-1-2-3")]
+    partial class fixuserId123
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -250,31 +250,11 @@ namespace R2Model.Migrations
                     b.Property<int>("Type")
                         .HasColumnType("int");
 
-                    b.Property<string>("UserId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("UserId1")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("UserId2")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("UserId3")
-                        .HasColumnType("nvarchar(450)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
 
                     b.HasIndex("StatisticId");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("UserId1");
-
-                    b.HasIndex("UserId2");
-
-                    b.HasIndex("UserId3");
 
                     b.ToTable("Ressources");
                 });
@@ -435,6 +415,66 @@ namespace R2Model.Migrations
                     b.ToTable("UserRights");
                 });
 
+            modelBuilder.Entity("UserCreatedResources", b =>
+                {
+                    b.Property<int>("ResourceId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("ResourceId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserCreatedResources");
+                });
+
+            modelBuilder.Entity("UserDraftResources", b =>
+                {
+                    b.Property<int>("ResourceId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("ResourceId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserDraftResources");
+                });
+
+            modelBuilder.Entity("UserExploitedResources", b =>
+                {
+                    b.Property<int>("ResourceId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("ResourceId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserExploitedResources");
+                });
+
+            modelBuilder.Entity("UserFavoriteResources", b =>
+                {
+                    b.Property<int>("ResourceId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("ResourceId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserFavoriteResources");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -505,22 +545,6 @@ namespace R2Model.Migrations
                         .WithMany("Ressources")
                         .HasForeignKey("StatisticId");
 
-                    b.HasOne("R2Model.Entities.User", null)
-                        .WithMany("CreatedResources")
-                        .HasForeignKey("UserId");
-
-                    b.HasOne("R2Model.Entities.User", null)
-                        .WithMany("DraftResources")
-                        .HasForeignKey("UserId1");
-
-                    b.HasOne("R2Model.Entities.User", null)
-                        .WithMany("ExploitedResources")
-                        .HasForeignKey("UserId2");
-
-                    b.HasOne("R2Model.Entities.User", null)
-                        .WithMany("FavoriteResources")
-                        .HasForeignKey("UserId3");
-
                     b.Navigation("Category");
                 });
 
@@ -546,6 +570,66 @@ namespace R2Model.Migrations
                         .HasForeignKey("RoleId");
                 });
 
+            modelBuilder.Entity("UserCreatedResources", b =>
+                {
+                    b.HasOne("R2Model.Entities.Resource", null)
+                        .WithMany()
+                        .HasForeignKey("ResourceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("R2Model.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("UserDraftResources", b =>
+                {
+                    b.HasOne("R2Model.Entities.Resource", null)
+                        .WithMany()
+                        .HasForeignKey("ResourceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("R2Model.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("UserExploitedResources", b =>
+                {
+                    b.HasOne("R2Model.Entities.Resource", null)
+                        .WithMany()
+                        .HasForeignKey("ResourceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("R2Model.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("UserFavoriteResources", b =>
+                {
+                    b.HasOne("R2Model.Entities.Resource", null)
+                        .WithMany()
+                        .HasForeignKey("ResourceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("R2Model.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("R2Model.Entities.Role", b =>
                 {
                     b.Navigation("UserRights");
@@ -561,14 +645,6 @@ namespace R2Model.Migrations
             modelBuilder.Entity("R2Model.Entities.User", b =>
                 {
                     b.Navigation("Comments");
-
-                    b.Navigation("CreatedResources");
-
-                    b.Navigation("DraftResources");
-
-                    b.Navigation("ExploitedResources");
-
-                    b.Navigation("FavoriteResources");
                 });
 #pragma warning restore 612, 618
         }
