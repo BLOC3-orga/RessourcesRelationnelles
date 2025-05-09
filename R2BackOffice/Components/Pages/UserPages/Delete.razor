@@ -1,0 +1,119 @@
+﻿@page "/users/delete"
+@using R2Model.Entities
+@using System.Net.Http.Json
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<PageTitle>Supprimer l'utilisateur</PageTitle>
+
+<h1>Supprimer l'utilisateur</h1>
+
+<div class="alert alert-danger">
+    <h3>Êtes-vous sûr de vouloir supprimer cet utilisateur ?</h3>
+    <p>Cette action est irréversible.</p>
+</div>
+
+@if (loading)
+{
+    <p><em>Chargement en cours...</em></p>
+}
+else if (user != null)
+{
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">@user.UserName</h5>
+            <div class="row mb-3">
+                <div class="col-md-2 fw-bold">ID:</div>
+                <div class="col-md-10">@user.Id</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-2 fw-bold">Prénom:</div>
+                <div class="col-md-10">@user.Name</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-2 fw-bold">Nom:</div>
+                <div class="col-md-10">@user.LastName</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-2 fw-bold">Pseudo:</div>
+                <div class="col-md-10">@user.Pseudo</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-2 fw-bold">Email:</div>
+                <div class="col-md-10">@user.Email</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-2 fw-bold">Compte activé:</div>
+                <div class="col-md-10">@(user.IsAccountActivated ? "Oui" : "Non")</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <button @onclick="DeleteUser" class="btn btn-danger">Confirmer la suppression</button>
+        <a href="/users" class="btn btn-secondary">Annuler</a>
+    </div>
+}
+else
+{
+    <div class="alert alert-warning">
+        Utilisateur non trouvé
+    </div>
+    <a href="/users" class="btn btn-secondary">Retour à la liste</a>
+}
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Id { get; set; }
+
+    private User? user;
+    private bool loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(Id))
+        {
+            NavigationManager.NavigateTo("/users");
+            return;
+        }
+
+        try
+        {
+            // Charger les détails de l'utilisateur
+            user = await Http.GetFromJsonAsync<User>($"api/Users/{Id}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors du chargement de l'utilisateur: {ex.Message}");
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task DeleteUser()
+    {
+        try
+        {
+            // Appeler l'API pour supprimer l'utilisateur
+            var response = await Http.DeleteAsync($"api/Users/{Id}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                NavigationManager.NavigateTo("/users");
+            }
+            else
+            {
+                // Gestion des erreurs
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Erreur lors de la suppression de l'utilisateur: {errorContent}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Exception lors de la suppression: {ex.Message}");
+        }
+    }
+}

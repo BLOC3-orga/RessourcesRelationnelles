@@ -1,0 +1,74 @@
+﻿@page "/users"
+@using Microsoft.EntityFrameworkCore
+@using R2Model.Entities
+@using R2Model.Context
+@implements IAsyncDisposable
+@inject IDbContextFactory<R2Model.Context.R2DbContext> DbFactory
+@inject NavigationManager Navigation
+
+<PageTitle>Utilisateurs</PageTitle>
+<h1>Utilisateurs</h1>
+<p>
+    <a href="users/create" class="btn btn-primary">Créer un nouvel utilisateur</a>
+</p>
+@if (users == null)
+{
+    <p><em>Chargement en cours...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Nom d'utilisateur</th>
+                <th>Prénom</th>
+                <th>Nom</th>
+                <th>Pseudo</th>
+                <th>Email</th>
+                <th>Ville</th>
+                <th>Compte activé</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <Virtualize Items="@users" Context="user">
+                <tr>
+                    <td>@user.UserName</td>
+                    <td>@user.Name</td>
+                    <td>@user.LastName</td>
+                    <td>@user.Pseudo</td>
+                    <td>@user.Email</td>
+                    <td>@user.City</td>
+                    <td>@user.IsAccountActivated</td>
+                    <td>
+                        <a href="@($"users/edit?id={user.Id}")" class="btn btn-sm btn-primary">Modifier</a>
+                        <a href="@($"users/details?id={user.Id}")" class="btn btn-sm btn-info">Détails</a>
+                        <a href="@($"users/delete?id={user.Id}")" class="btn btn-sm btn-danger">Supprimer</a>
+                    </td>
+                </tr>
+            </Virtualize>
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<User>? users;
+    private R2DbContext context = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        context = DbFactory.CreateDbContext();
+        try
+        {
+            // Utiliser directement le contexte
+            users = await context.Users.ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors du chargement des utilisateurs: {ex.Message}");
+            users = new List<User>();
+        }
+    }
+
+    public async ValueTask DisposeAsync() => await context.DisposeAsync();
+}

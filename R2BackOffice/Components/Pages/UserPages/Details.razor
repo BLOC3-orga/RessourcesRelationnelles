@@ -1,0 +1,277 @@
+﻿@page "/users/details"
+@using R2Model.Entities
+@using System.Net.Http.Json
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<PageTitle>Détails de l'utilisateur</PageTitle>
+
+<h1>Détails de l'utilisateur</h1>
+
+@if (loading)
+{
+    <p><em>Chargement en cours...</em></p>
+}
+else if (user != null)
+{
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">@user.UserName</h5>
+            <div class="row mb-3">
+                <div class="col-md-2 fw-bold">ID:</div>
+                <div class="col-md-10">@user.Id</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-2 fw-bold">Prénom:</div>
+                <div class="col-md-10">@user.Name</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-2 fw-bold">Nom:</div>
+                <div class="col-md-10">@user.LastName</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-2 fw-bold">Pseudo:</div>
+                <div class="col-md-10">@user.Pseudo</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-2 fw-bold">Email:</div>
+                <div class="col-md-10">@user.Email</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-2 fw-bold">Ville:</div>
+                <div class="col-md-10">@user.City</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-2 fw-bold">Adresse:</div>
+                <div class="col-md-10">@user.Address</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-2 fw-bold">Rôle:</div>
+                <div class="col-md-10">@(role?.Label ?? "Non spécifié")</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-2 fw-bold">Compte activé:</div>
+                <div class="col-md-10">@(user.IsAccountActivated ? "Oui" : "Non")</div>
+            </div>
+        </div>
+    </div>
+
+    <h3 class="mt-4">Collections de ressources</h3>
+
+    <ul class="nav nav-tabs" id="resourceTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="favorites-tab" data-bs-toggle="tab" data-bs-target="#favorites" type="button" role="tab" aria-controls="favorites" aria-selected="true">Favoris</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="exploited-tab" data-bs-toggle="tab" data-bs-target="#exploited" type="button" role="tab" aria-controls="exploited" aria-selected="false">Exploitées</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="draft-tab" data-bs-toggle="tab" data-bs-target="#draft" type="button" role="tab" aria-controls="draft" aria-selected="false">Brouillons</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="created-tab" data-bs-toggle="tab" data-bs-target="#created" type="button" role="tab" aria-controls="created" aria-selected="false">Créées</button>
+        </li>
+    </ul>
+    <div class="tab-content" id="resourceTabsContent">
+        <div class="tab-pane fade show active" id="favorites" role="tabpanel" aria-labelledby="favorites-tab">
+            @if (favoriteResources == null)
+            {
+                <p><em>Chargement en cours...</em></p>
+            }
+            else if (!favoriteResources.Any())
+            {
+                <p>Aucune ressource favorite.</p>
+            }
+            else
+            {
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Titre</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var resource in favoriteResources)
+                        {
+                            <tr>
+                                <td>@resource.Id</td>
+                                <td>@resource.Name</td>
+                                <td>
+                                    <a href="@($"resources/details?id={resource.Id}")" class="btn btn-sm btn-info">Détails</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+        <div class="tab-pane fade" id="exploited" role="tabpanel" aria-labelledby="exploited-tab">
+            @if (exploitedResources == null)
+            {
+                <p><em>Chargement en cours...</em></p>
+            }
+            else if (!exploitedResources.Any())
+            {
+                <p>Aucune ressource exploitée.</p>
+            }
+            else
+            {
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Titre</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var resource in exploitedResources)
+                        {
+                            <tr>
+                                <td>@resource.Id</td>
+                                <td>@resource.Name</td>
+                                <td>
+                                    <a href="@($"resources/details?id={resource.Id}")" class="btn btn-sm btn-info">Détails</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+        <div class="tab-pane fade" id="draft" role="tabpanel" aria-labelledby="draft-tab">
+            @if (draftResources == null)
+            {
+                <p><em>Chargement en cours...</em></p>
+            }
+            else if (!draftResources.Any())
+            {
+                <p>Aucun brouillon.</p>
+            }
+            else
+            {
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Titre</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var resource in draftResources)
+                        {
+                            <tr>
+                                <td>@resource.Id</td>
+                                <td>@resource.Name</td>
+                                <td>
+                                    <a href="@($"resources/details?id={resource.Id}")" class="btn btn-sm btn-info">Détails</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+        <div class="tab-pane fade" id="created" role="tabpanel" aria-labelledby="created-tab">
+            @if (createdResources == null)
+            {
+                <p><em>Chargement en cours...</em></p>
+            }
+            else if (!createdResources.Any())
+            {
+                <p>Aucune ressource créée.</p>
+            }
+            else
+            {
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Titre</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var resource in createdResources)
+                        {
+                            <tr>
+                                <td>@resource.Id</td>
+                                <td>@resource.Name</td>
+                                <td>
+                                    <a href="@($"resources/details?id={resource.Id}")" class="btn btn-sm btn-info">Détails</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a href="@($"users/edit?id={user.Id}")" class="btn btn-primary">Modifier</a>
+        <a href="/users" class="btn btn-secondary">Retour à la liste</a>
+    </div>
+}
+else
+{
+    <div class="alert alert-danger">
+        Utilisateur non trouvé
+    </div>
+    <a href="/users" class="btn btn-secondary">Retour à la liste</a>
+}
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Id { get; set; }
+
+    private User? user;
+    private Role? role;
+    private bool loading = true;
+    private List<Resource>? favoriteResources;
+    private List<Resource>? exploitedResources;
+    private List<Resource>? draftResources;
+    private List<Resource>? createdResources;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(Id))
+        {
+            NavigationManager.NavigateTo("/users");
+            return;
+        }
+
+        try
+        {
+            // Charger les détails de l'utilisateur
+            user = await Http.GetFromJsonAsync<User>($"api/Users/{Id}");
+
+            if (user != null)
+            {
+                // Charger le rôle de l'utilisateur
+                if (user.RoleId > 0)
+                {
+                    role = await Http.GetFromJsonAsync<Role>($"api/Roles/{user.RoleId}");
+                }
+
+                // Charger les collections de ressources
+                favoriteResources = await Http.GetFromJsonAsync<List<Resource>>($"api/Users/{Id}/FavoriteResources");
+                exploitedResources = await Http.GetFromJsonAsync<List<Resource>>($"api/Users/{Id}/ExploitedResources");
+                draftResources = await Http.GetFromJsonAsync<List<Resource>>($"api/Users/{Id}/DraftResources");
+                createdResources = await Http.GetFromJsonAsync<List<Resource>>($"api/Users/{Id}/CreatedResources");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors du chargement des données: {ex.Message}");
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+}
