@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace R2Model.Migrations
 {
     /// <inheritdoc />
-    public partial class initial : Migration
+    public partial class users : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -15,7 +15,8 @@ namespace R2Model.Migrations
                 name: "AspNetRoles",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     NormalizedName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     ConcurrencyStamp = table.Column<string>(type: "nvarchar(max)", nullable: true)
@@ -86,7 +87,7 @@ namespace R2Model.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    RoleId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    RoleId = table.Column<int>(type: "int", nullable: false),
                     ClaimType = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ClaimValue = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
@@ -124,7 +125,8 @@ namespace R2Model.Migrations
                 name: "AspNetUsers",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     LastName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Pseudo = table.Column<string>(type: "nvarchar(max)", nullable: false),
@@ -165,12 +167,42 @@ namespace R2Model.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Ressources",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CreationDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Type = table.Column<int>(type: "int", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    CategoryId = table.Column<int>(type: "int", nullable: false),
+                    StatisticId = table.Column<int>(type: "int", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Ressources", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Ressources_Categories_CategoryId",
+                        column: x => x.CategoryId,
+                        principalTable: "Categories",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Ressources_Statistics_StatisticId",
+                        column: x => x.StatisticId,
+                        principalTable: "Statistics",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "AspNetUserClaims",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    UserId = table.Column<int>(type: "int", nullable: false),
                     ClaimType = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ClaimValue = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
@@ -192,7 +224,7 @@ namespace R2Model.Migrations
                     LoginProvider = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     ProviderKey = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     ProviderDisplayName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false)
+                    UserId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -209,8 +241,8 @@ namespace R2Model.Migrations
                 name: "AspNetUserRoles",
                 columns: table => new
                 {
-                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    RoleId = table.Column<string>(type: "nvarchar(450)", nullable: false)
+                    UserId = table.Column<int>(type: "int", nullable: false),
+                    RoleId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -233,7 +265,7 @@ namespace R2Model.Migrations
                 name: "AspNetUserTokens",
                 columns: table => new
                 {
-                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    UserId = table.Column<int>(type: "int", nullable: false),
                     LoginProvider = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     Value = table.Column<string>(type: "nvarchar(max)", nullable: true)
@@ -256,7 +288,7 @@ namespace R2Model.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: true)
+                    UserId = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -269,57 +301,99 @@ namespace R2Model.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Ressources",
+                name: "UserCreatedResources",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    CreationDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Type = table.Column<int>(type: "int", nullable: false),
-                    Status = table.Column<int>(type: "int", nullable: false),
-                    CategoryId = table.Column<int>(type: "int", nullable: false),
-                    StatisticId = table.Column<int>(type: "int", nullable: true),
-                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: true),
-                    UserId1 = table.Column<string>(type: "nvarchar(450)", nullable: true),
-                    UserId2 = table.Column<string>(type: "nvarchar(450)", nullable: true),
-                    UserId3 = table.Column<string>(type: "nvarchar(450)", nullable: true)
+                    ResourceId = table.Column<int>(type: "int", nullable: false),
+                    UserId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Ressources", x => x.Id);
+                    table.PrimaryKey("PK_UserCreatedResources", x => new { x.ResourceId, x.UserId });
                     table.ForeignKey(
-                        name: "FK_Ressources_AspNetUsers_UserId",
+                        name: "FK_UserCreatedResources_AspNetUsers_UserId",
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_Ressources_AspNetUsers_UserId1",
-                        column: x => x.UserId1,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_Ressources_AspNetUsers_UserId2",
-                        column: x => x.UserId2,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_Ressources_AspNetUsers_UserId3",
-                        column: x => x.UserId3,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_Ressources_Categories_CategoryId",
-                        column: x => x.CategoryId,
-                        principalTable: "Categories",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Ressources_Statistics_StatisticId",
-                        column: x => x.StatisticId,
-                        principalTable: "Statistics",
-                        principalColumn: "Id");
+                        name: "FK_UserCreatedResources_Ressources_ResourceId",
+                        column: x => x.ResourceId,
+                        principalTable: "Ressources",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "UserDraftResources",
+                columns: table => new
+                {
+                    ResourceId = table.Column<int>(type: "int", nullable: false),
+                    UserId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserDraftResources", x => new { x.ResourceId, x.UserId });
+                    table.ForeignKey(
+                        name: "FK_UserDraftResources_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_UserDraftResources_Ressources_ResourceId",
+                        column: x => x.ResourceId,
+                        principalTable: "Ressources",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "UserExploitedResources",
+                columns: table => new
+                {
+                    ResourceId = table.Column<int>(type: "int", nullable: false),
+                    UserId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserExploitedResources", x => new { x.ResourceId, x.UserId });
+                    table.ForeignKey(
+                        name: "FK_UserExploitedResources_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_UserExploitedResources_Ressources_ResourceId",
+                        column: x => x.ResourceId,
+                        principalTable: "Ressources",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "UserFavoriteResources",
+                columns: table => new
+                {
+                    ResourceId = table.Column<int>(type: "int", nullable: false),
+                    UserId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserFavoriteResources", x => new { x.ResourceId, x.UserId });
+                    table.ForeignKey(
+                        name: "FK_UserFavoriteResources_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_UserFavoriteResources_Ressources_ResourceId",
+                        column: x => x.ResourceId,
+                        principalTable: "Ressources",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
@@ -387,24 +461,24 @@ namespace R2Model.Migrations
                 column: "StatisticId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Ressources_UserId",
-                table: "Ressources",
+                name: "IX_UserCreatedResources_UserId",
+                table: "UserCreatedResources",
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Ressources_UserId1",
-                table: "Ressources",
-                column: "UserId1");
+                name: "IX_UserDraftResources_UserId",
+                table: "UserDraftResources",
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Ressources_UserId2",
-                table: "Ressources",
-                column: "UserId2");
+                name: "IX_UserExploitedResources_UserId",
+                table: "UserExploitedResources",
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Ressources_UserId3",
-                table: "Ressources",
-                column: "UserId3");
+                name: "IX_UserFavoriteResources_UserId",
+                table: "UserFavoriteResources",
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserRights_RoleId",
@@ -437,7 +511,16 @@ namespace R2Model.Migrations
                 name: "Progressions");
 
             migrationBuilder.DropTable(
-                name: "Ressources");
+                name: "UserCreatedResources");
+
+            migrationBuilder.DropTable(
+                name: "UserDraftResources");
+
+            migrationBuilder.DropTable(
+                name: "UserExploitedResources");
+
+            migrationBuilder.DropTable(
+                name: "UserFavoriteResources");
 
             migrationBuilder.DropTable(
                 name: "UserRights");
@@ -449,10 +532,13 @@ namespace R2Model.Migrations
                 name: "AspNetUsers");
 
             migrationBuilder.DropTable(
-                name: "Categories");
+                name: "Ressources");
 
             migrationBuilder.DropTable(
                 name: "Role");
+
+            migrationBuilder.DropTable(
+                name: "Categories");
 
             migrationBuilder.DropTable(
                 name: "Statistics");

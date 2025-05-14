@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace R2Model.Entities;
 
-public class User : IdentityUser
+public class User : IdentityUser<int>
 {
     // Ces propriétés sont déjà dans IdentityUser : UserName, Email, PasswordHash
     // Donc on évite de redéfinir "Password" qui pourrait créer des conflits

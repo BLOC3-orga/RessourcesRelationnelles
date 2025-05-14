@@ -1,73 +1,55 @@
 ﻿@page "/users"
 @using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
 @using R2Model.Entities
 @using R2Model.Context
 @implements IAsyncDisposable
 @inject IDbContextFactory<R2Model.Context.R2DbContext> DbFactory
-@inject NavigationManager Navigation
 
-<PageTitle>Utilisateurs</PageTitle>
-<h1>Utilisateurs</h1>
+<PageTitle>Index</PageTitle>
+
+<h1>Index</h1>
+
 <p>
-    <a href="users/create" class="btn btn-primary">Créer un nouvel utilisateur</a>
+    <a href="users/create">Create New</a>
 </p>
-@if (users == null)
-{
-    <p><em>Chargement en cours...</em></p>
-}
-else
-{
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Nom d'utilisateur</th>
-                <th>Prénom</th>
-                <th>Nom</th>
-                <th>Pseudo</th>
-                <th>Email</th>
-                <th>Ville</th>
-                <th>Compte activé</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            <Virtualize Items="@users" Context="user">
-                <tr>
-                    <td>@user.UserName</td>
-                    <td>@user.Name</td>
-                    <td>@user.LastName</td>
-                    <td>@user.Pseudo</td>
-                    <td>@user.Email</td>
-                    <td>@user.City</td>
-                    <td>@user.IsAccountActivated</td>
-                    <td>
-                        <a href="@($"users/edit?id={user.Id}")" class="btn btn-sm btn-primary">Modifier</a>
-                        <a href="@($"users/details?id={user.Id}")" class="btn btn-sm btn-info">Détails</a>
-                        <a href="@($"users/delete?id={user.Id}")" class="btn btn-sm btn-danger">Supprimer</a>
-                    </td>
-                </tr>
-            </Virtualize>
-        </tbody>
-    </table>
-}
+
+<QuickGrid Class="table" Items="context.Users">
+    <PropertyColumn Property="user => user.Name" />
+    <PropertyColumn Property="user => user.LastName" />
+    <PropertyColumn Property="user => user.Pseudo" />
+    <PropertyColumn Property="user => user.City" />
+    <PropertyColumn Property="user => user.Address" />
+    <PropertyColumn Property="user => user.IsAccountActivated" />
+    <PropertyColumn Property="user => user.RoleId" />
+    <PropertyColumn Property="user => user.UserName" />
+    <PropertyColumn Property="user => user.NormalizedUserName" />
+    <PropertyColumn Property="user => user.Email" />
+    <PropertyColumn Property="user => user.NormalizedEmail" />
+    <PropertyColumn Property="user => user.EmailConfirmed" />
+    <PropertyColumn Property="user => user.PasswordHash" />
+    <PropertyColumn Property="user => user.SecurityStamp" />
+    <PropertyColumn Property="user => user.ConcurrencyStamp" />
+    <PropertyColumn Property="user => user.PhoneNumber" />
+    <PropertyColumn Property="user => user.PhoneNumberConfirmed" />
+    <PropertyColumn Property="user => user.TwoFactorEnabled" />
+    <PropertyColumn Property="user => user.LockoutEnd" />
+    <PropertyColumn Property="user => user.LockoutEnabled" />
+    <PropertyColumn Property="user => user.AccessFailedCount" />
+
+    <TemplateColumn Context="user">
+        <a href="@($"users/edit?id={user.Id}")">Edit</a> |
+        <a href="@($"users/details?id={user.Id}")">Details</a> |
+        <a href="@($"users/delete?id={user.Id}")">Delete</a>
+    </TemplateColumn>
+</QuickGrid>
 
 @code {
-    private List<User>? users;
     private R2DbContext context = default!;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         context = DbFactory.CreateDbContext();
-        try
-        {
-            // Utiliser directement le contexte
-            users = await context.Users.ToListAsync();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Erreur lors du chargement des utilisateurs: {ex.Message}");
-            users = new List<User>();
-        }
     }
 
     public async ValueTask DisposeAsync() => await context.DisposeAsync();
