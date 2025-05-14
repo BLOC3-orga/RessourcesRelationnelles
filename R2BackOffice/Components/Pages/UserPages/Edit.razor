@@ -1,220 +1,189 @@
 ﻿@page "/users/edit"
+@using Microsoft.EntityFrameworkCore
 @using R2Model.Entities
-@using System.Net.Http.Json
-@using System.ComponentModel.DataAnnotations
-@inject HttpClient Http
+@inject IDbContextFactory<R2Model.Context.R2DbContext> DbFactory
 @inject NavigationManager NavigationManager
 
-<PageTitle>Modifier l'utilisateur</PageTitle>
+<PageTitle>Edit</PageTitle>
 
-<h1>Modifier l'utilisateur</h1>
+<h1>Edit</h1>
 
-@if (loading)
+<h2>User</h2>
+<hr />
+@if (User is null)
 {
-    <p><em>Chargement en cours...</em></p>
+    <p><em>Loading...</em></p>
 }
-else if (userModel != null)
+else
 {
     <div class="row">
-        <div class="col-md-6">
-            <EditForm Model="userModel" OnValidSubmit="HandleValidSubmit">
+        <div class="col-md-4">
+            <EditForm method="post" Model="User" OnValidSubmit="UpdateUser" FormName="edit" Enhance>
                 <DataAnnotationsValidator />
-                <ValidationSummary />
-
-                <div class="form-group mb-3">
-                    <label for="username">Nom d'utilisateur</label>
-                    <InputText id="username" @bind-Value="userModel.UserName" class="form-control" disabled />
+                <ValidationSummary role="alert"/>
+                <input type="hidden" name="User.Id" value="@User.Id" />
+                <div class="mb-3">
+                    <label for="name" class="form-label">Name:</label>
+                    <InputText id="name" @bind-Value="User.Name" class="form-control" />
+                    <ValidationMessage For="() => User.Name" class="text-danger" />
                 </div>
-
-                <div class="form-group mb-3">
-                    <label for="email">Email</label>
-                    <InputText id="email" @bind-Value="userModel.Email" class="form-control" disabled />
+                <div class="mb-3">
+                    <label for="lastname" class="form-label">LastName:</label>
+                    <InputText id="lastname" @bind-Value="User.LastName" class="form-control" />
+                    <ValidationMessage For="() => User.LastName" class="text-danger" />
                 </div>
-
-                <div class="form-group mb-3">
-                    <label for="name">Prénom</label>
-                    <InputText id="name" @bind-Value="userModel.Name" class="form-control" />
-                    <ValidationMessage For="@(() => userModel.Name)" />
+                <div class="mb-3">
+                    <label for="pseudo" class="form-label">Pseudo:</label>
+                    <InputText id="pseudo" @bind-Value="User.Pseudo" class="form-control" />
+                    <ValidationMessage For="() => User.Pseudo" class="text-danger" />
                 </div>
-
-                <div class="form-group mb-3">
-                    <label for="lastname">Nom</label>
-                    <InputText id="lastname" @bind-Value="userModel.LastName" class="form-control" />
-                    <ValidationMessage For="@(() => userModel.LastName)" />
+                <div class="mb-3">
+                    <label for="city" class="form-label">City:</label>
+                    <InputText id="city" @bind-Value="User.City" class="form-control" />
+                    <ValidationMessage For="() => User.City" class="text-danger" />
                 </div>
-
-                <div class="form-group mb-3">
-                    <label for="pseudo">Pseudo</label>
-                    <InputText id="pseudo" @bind-Value="userModel.Pseudo" class="form-control" />
-                    <ValidationMessage For="@(() => userModel.Pseudo)" />
+                <div class="mb-3">
+                    <label for="address" class="form-label">Address:</label>
+                    <InputText id="address" @bind-Value="User.Address" class="form-control" />
+                    <ValidationMessage For="() => User.Address" class="text-danger" />
                 </div>
-
-                <div class="form-group mb-3">
-                    <label for="city">Ville</label>
-                    <InputText id="city" @bind-Value="userModel.City" class="form-control" />
-                    <ValidationMessage For="@(() => userModel.City)" />
+                <div class="mb-3">
+                    <label for="isaccountactivated" class="form-label">IsAccountActivated:</label>
+                    <InputCheckbox id="isaccountactivated" @bind-Value="User.IsAccountActivated" class="form-check-input" />
+                    <ValidationMessage For="() => User.IsAccountActivated" class="text-danger" />
                 </div>
-
-                <div class="form-group mb-3">
-                    <label for="address">Adresse</label>
-                    <InputText id="address" @bind-Value="userModel.Address" class="form-control" />
-                    <ValidationMessage For="@(() => userModel.Address)" />
+                <div class="mb-3">
+                    <label for="roleid" class="form-label">RoleId:</label>
+                    <InputNumber id="roleid" @bind-Value="User.RoleId" class="form-control" />
+                    <ValidationMessage For="() => User.RoleId" class="text-danger" />
                 </div>
-
-                <div class="form-group mb-3">
-                    <label for="roleId">Rôle</label>
-                    <InputSelect id="roleId" @bind-Value="userModel.RoleId" class="form-control">
-                        @if (roles != null)
-                        {
-                            @foreach (var role in roles)
-                            {
-                                <option value="@role.Id">@role.Label</option>
-                            }
-                        }
-                    </InputSelect>
-                    <ValidationMessage For="@(() => userModel.RoleId)" />
+                <div class="mb-3">
+                    <label for="username" class="form-label">UserName:</label>
+                    <InputText id="username" @bind-Value="User.UserName" class="form-control" />
+                    <ValidationMessage For="() => User.UserName" class="text-danger" />
                 </div>
-
-                <div class="form-check mb-3">
-                    <InputCheckbox id="isActivated" @bind-Value="userModel.IsAccountActivated" class="form-check-input" />
-                    <label class="form-check-label" for="isActivated">Compte activé</label>
+                <div class="mb-3">
+                    <label for="normalizedusername" class="form-label">NormalizedUserName:</label>
+                    <InputText id="normalizedusername" @bind-Value="User.NormalizedUserName" class="form-control" />
+                    <ValidationMessage For="() => User.NormalizedUserName" class="text-danger" />
                 </div>
-
-                <div class="form-group mt-4">
-                    <button type="submit" class="btn btn-primary">Enregistrer</button>
-                    <a href="@($"users/details?id={Id}")" class="btn btn-info">Détails</a>
-                    <a href="/users" class="btn btn-secondary">Retour à la liste</a>
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email:</label>
+                    <InputText id="email" @bind-Value="User.Email" class="form-control" />
+                    <ValidationMessage For="() => User.Email" class="text-danger" />
                 </div>
+                <div class="mb-3">
+                    <label for="normalizedemail" class="form-label">NormalizedEmail:</label>
+                    <InputText id="normalizedemail" @bind-Value="User.NormalizedEmail" class="form-control" />
+                    <ValidationMessage For="() => User.NormalizedEmail" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="emailconfirmed" class="form-label">EmailConfirmed:</label>
+                    <InputCheckbox id="emailconfirmed" @bind-Value="User.EmailConfirmed" class="form-check-input" />
+                    <ValidationMessage For="() => User.EmailConfirmed" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="passwordhash" class="form-label">PasswordHash:</label>
+                    <InputText id="passwordhash" @bind-Value="User.PasswordHash" class="form-control" />
+                    <ValidationMessage For="() => User.PasswordHash" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="securitystamp" class="form-label">SecurityStamp:</label>
+                    <InputText id="securitystamp" @bind-Value="User.SecurityStamp" class="form-control" />
+                    <ValidationMessage For="() => User.SecurityStamp" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="concurrencystamp" class="form-label">ConcurrencyStamp:</label>
+                    <InputText id="concurrencystamp" @bind-Value="User.ConcurrencyStamp" class="form-control" />
+                    <ValidationMessage For="() => User.ConcurrencyStamp" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="phonenumber" class="form-label">PhoneNumber:</label>
+                    <InputText id="phonenumber" @bind-Value="User.PhoneNumber" class="form-control" />
+                    <ValidationMessage For="() => User.PhoneNumber" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="phonenumberconfirmed" class="form-label">PhoneNumberConfirmed:</label>
+                    <InputCheckbox id="phonenumberconfirmed" @bind-Value="User.PhoneNumberConfirmed" class="form-check-input" />
+                    <ValidationMessage For="() => User.PhoneNumberConfirmed" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="twofactorenabled" class="form-label">TwoFactorEnabled:</label>
+                    <InputCheckbox id="twofactorenabled" @bind-Value="User.TwoFactorEnabled" class="form-check-input" />
+                    <ValidationMessage For="() => User.TwoFactorEnabled" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="lockoutend" class="form-label">LockoutEnd:</label>
+                    <InputDate id="lockoutend" @bind-Value="User.LockoutEnd" class="form-control" />
+                    <ValidationMessage For="() => User.LockoutEnd" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="lockoutenabled" class="form-label">LockoutEnabled:</label>
+                    <InputCheckbox id="lockoutenabled" @bind-Value="User.LockoutEnabled" class="form-check-input" />
+                    <ValidationMessage For="() => User.LockoutEnabled" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="accessfailedcount" class="form-label">AccessFailedCount:</label>
+                    <InputNumber id="accessfailedcount" @bind-Value="User.AccessFailedCount" class="form-control" />
+                    <ValidationMessage For="() => User.AccessFailedCount" class="text-danger" />
+                </div>
+                <button type="submit" class="btn btn-primary">Save</button>
             </EditForm>
         </div>
     </div>
 }
-else
-{
-    <div class="alert alert-danger">
-        Utilisateur non trouvé
-    </div>
-    <a href="/users" class="btn btn-secondary">Retour à la liste</a>
-}
+
+<div>
+    <a href="/users">Back to List</a>
+</div>
 
 @code {
-    [Parameter]
     [SupplyParameterFromQuery]
-    public string? Id { get; set; }
+    private int Id { get; set; }
 
-    private UserModel? userModel;
-    private List<Role>? roles;
-    private bool loading = true;
+    [SupplyParameterFromForm]
+    private User? User { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        if (string.IsNullOrEmpty(Id))
-        {
-            NavigationManager.NavigateTo("/users");
-            return;
-        }
+        using var context = DbFactory.CreateDbContext();
+        User ??= await context.Users.FirstOrDefaultAsync(m => m.Id == Id);
 
-        try
+        if (User is null)
         {
-            // Charger l'utilisateur depuis l'API
-            var user = await Http.GetFromJsonAsync<User>($"api/Users/{Id}");
-
-            if (user != null)
-            {
-                userModel = new UserModel
-                    {
-                        Id = user.Id,
-                        UserName = user.UserName ?? string.Empty,
-                        Email = user.Email ?? string.Empty,
-                        Name = user.Name,
-                        LastName = user.LastName,
-                        Pseudo = user.Pseudo,
-                        City = user.City,
-                        Address = user.Address,
-                        RoleId = user.RoleId,
-                        IsAccountActivated = user.IsAccountActivated
-                    };
-            }
-
-            // Charger les rôles depuis l'API
-            roles = await Http.GetFromJsonAsync<List<Role>>("api/Roles");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Erreur lors du chargement des données: {ex.Message}");
-        }
-        finally
-        {
-            loading = false;
+            NavigationManager.NavigateTo("notfound");
         }
     }
 
-    private async Task HandleValidSubmit()
+    // To protect from overposting attacks, enable the specific properties you want to bind to.
+    // For more information, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
+    private async Task UpdateUser()
     {
-        if (userModel == null) return;
+        using var context = DbFactory.CreateDbContext();
+        context.Attach(User!).State = EntityState.Modified;
 
         try
         {
-            // Créer un objet User à partir du modèle
-            var user = new User
-                {
-                    Id = userModel.Id,
-                    UserName = userModel.UserName,
-                    Email = userModel.Email,
-                    Name = userModel.Name,
-                    LastName = userModel.LastName,
-                    Pseudo = userModel.Pseudo,
-                    City = userModel.City,
-                    Address = userModel.Address,
-                    RoleId = userModel.RoleId,
-                    IsAccountActivated = userModel.IsAccountActivated
-                };
-
-            // Appeler l'API pour mettre à jour l'utilisateur
-            var response = await Http.PutAsJsonAsync($"api/Users/{Id}", user);
-
-            if (response.IsSuccessStatusCode)
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!UserExists(User!.Id))
             {
-                NavigationManager.NavigateTo($"/users/details?id={Id}");
+                NavigationManager.NavigateTo("notfound");
             }
             else
             {
-                // Gestion des erreurs
-                var errorContent = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"Erreur lors de la mise à jour de l'utilisateur: {errorContent}");
+                throw;
             }
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Exception: {ex.Message}");
-        }
+
+        NavigationManager.NavigateTo("/users");
     }
 
-    // Classe modèle pour le formulaire
-    public class UserModel
+    private bool UserExists(int id)
     {
-        public string Id { get; set; } = string.Empty;
-
-        public string UserName { get; set; } = string.Empty;
-
-        public string Email { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Le prénom est requis")]
-        public string Name { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Le nom est requis")]
-        public string LastName { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Le pseudo est requis")]
-        public string Pseudo { get; set; } = string.Empty;
-
-        public string City { get; set; } = string.Empty;
-
-        public string Address { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Le rôle est requis")]
-        public int RoleId { get; set; }
-
-        public bool IsAccountActivated { get; set; } = true;
+        using var context = DbFactory.CreateDbContext();
+        return context.Users.Any(e => e.Id == id);
     }
 }

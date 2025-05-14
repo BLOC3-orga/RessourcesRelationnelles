@@ -1,119 +1,135 @@
 ﻿@page "/users/delete"
+@using Microsoft.EntityFrameworkCore
 @using R2Model.Entities
-@using System.Net.Http.Json
-@inject HttpClient Http
+@inject IDbContextFactory<R2Model.Context.R2DbContext> DbFactory
 @inject NavigationManager NavigationManager
 
-<PageTitle>Supprimer l'utilisateur</PageTitle>
+<PageTitle>Delete</PageTitle>
 
-<h1>Supprimer l'utilisateur</h1>
+<h1>Delete</h1>
 
-<div class="alert alert-danger">
-    <h3>Êtes-vous sûr de vouloir supprimer cet utilisateur ?</h3>
-    <p>Cette action est irréversible.</p>
+<p>Are you sure you want to delete this?</p>
+<div>
+    <h2>User</h2>
+    <hr />
+    @if (user is null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else {
+        <dl class="row">
+            <dt class="col-sm-2">Name</dt>
+            <dd class="col-sm-10">@user.Name</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">LastName</dt>
+            <dd class="col-sm-10">@user.LastName</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Pseudo</dt>
+            <dd class="col-sm-10">@user.Pseudo</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">City</dt>
+            <dd class="col-sm-10">@user.City</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Address</dt>
+            <dd class="col-sm-10">@user.Address</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">IsAccountActivated</dt>
+            <dd class="col-sm-10">@user.IsAccountActivated</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">RoleId</dt>
+            <dd class="col-sm-10">@user.RoleId</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">UserName</dt>
+            <dd class="col-sm-10">@user.UserName</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">NormalizedUserName</dt>
+            <dd class="col-sm-10">@user.NormalizedUserName</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Email</dt>
+            <dd class="col-sm-10">@user.Email</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">NormalizedEmail</dt>
+            <dd class="col-sm-10">@user.NormalizedEmail</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">EmailConfirmed</dt>
+            <dd class="col-sm-10">@user.EmailConfirmed</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">PasswordHash</dt>
+            <dd class="col-sm-10">@user.PasswordHash</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">SecurityStamp</dt>
+            <dd class="col-sm-10">@user.SecurityStamp</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">ConcurrencyStamp</dt>
+            <dd class="col-sm-10">@user.ConcurrencyStamp</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">PhoneNumber</dt>
+            <dd class="col-sm-10">@user.PhoneNumber</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">PhoneNumberConfirmed</dt>
+            <dd class="col-sm-10">@user.PhoneNumberConfirmed</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">TwoFactorEnabled</dt>
+            <dd class="col-sm-10">@user.TwoFactorEnabled</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">LockoutEnd</dt>
+            <dd class="col-sm-10">@user.LockoutEnd</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">LockoutEnabled</dt>
+            <dd class="col-sm-10">@user.LockoutEnabled</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">AccessFailedCount</dt>
+            <dd class="col-sm-10">@user.AccessFailedCount</dd>
+        </dl>
+        <EditForm method="post" Model="user" OnValidSubmit="DeleteUser" FormName="delete" Enhance>
+            <button type="submit" class="btn btn-danger" disabled="@(user is null)">Delete</button> |
+            <a href="/users">Back to List</a>
+        </EditForm>
+    }
 </div>
 
-@if (loading)
-{
-    <p><em>Chargement en cours...</em></p>
-}
-else if (user != null)
-{
-    <div class="card">
-        <div class="card-body">
-            <h5 class="card-title">@user.UserName</h5>
-            <div class="row mb-3">
-                <div class="col-md-2 fw-bold">ID:</div>
-                <div class="col-md-10">@user.Id</div>
-            </div>
-            <div class="row mb-3">
-                <div class="col-md-2 fw-bold">Prénom:</div>
-                <div class="col-md-10">@user.Name</div>
-            </div>
-            <div class="row mb-3">
-                <div class="col-md-2 fw-bold">Nom:</div>
-                <div class="col-md-10">@user.LastName</div>
-            </div>
-            <div class="row mb-3">
-                <div class="col-md-2 fw-bold">Pseudo:</div>
-                <div class="col-md-10">@user.Pseudo</div>
-            </div>
-            <div class="row mb-3">
-                <div class="col-md-2 fw-bold">Email:</div>
-                <div class="col-md-10">@user.Email</div>
-            </div>
-            <div class="row mb-3">
-                <div class="col-md-2 fw-bold">Compte activé:</div>
-                <div class="col-md-10">@(user.IsAccountActivated ? "Oui" : "Non")</div>
-            </div>
-        </div>
-    </div>
-
-    <div class="mt-4">
-        <button @onclick="DeleteUser" class="btn btn-danger">Confirmer la suppression</button>
-        <a href="/users" class="btn btn-secondary">Annuler</a>
-    </div>
-}
-else
-{
-    <div class="alert alert-warning">
-        Utilisateur non trouvé
-    </div>
-    <a href="/users" class="btn btn-secondary">Retour à la liste</a>
-}
-
 @code {
-    [Parameter]
-    [SupplyParameterFromQuery]
-    public string? Id { get; set; }
-
     private User? user;
-    private bool loading = true;
+
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        if (string.IsNullOrEmpty(Id))
-        {
-            NavigationManager.NavigateTo("/users");
-            return;
-        }
+        using var context = DbFactory.CreateDbContext();
+        user = await context.Users.FirstOrDefaultAsync(m => m.Id == Id);
 
-        try
+        if (user is null)
         {
-            // Charger les détails de l'utilisateur
-            user = await Http.GetFromJsonAsync<User>($"api/Users/{Id}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Erreur lors du chargement de l'utilisateur: {ex.Message}");
-        }
-        finally
-        {
-            loading = false;
+            NavigationManager.NavigateTo("notfound");
         }
     }
 
     private async Task DeleteUser()
     {
-        try
-        {
-            // Appeler l'API pour supprimer l'utilisateur
-            var response = await Http.DeleteAsync($"api/Users/{Id}");
-
-            if (response.IsSuccessStatusCode)
-            {
-                NavigationManager.NavigateTo("/users");
-            }
-            else
-            {
-                // Gestion des erreurs
-                var errorContent = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"Erreur lors de la suppression de l'utilisateur: {errorContent}");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Exception lors de la suppression: {ex.Message}");
-        }
+        using var context = DbFactory.CreateDbContext();
+        context.Users.Remove(user!);
+        await context.SaveChangesAsync();
+        NavigationManager.NavigateTo("/users");
     }
 }
