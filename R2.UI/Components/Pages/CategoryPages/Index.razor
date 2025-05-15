@@ -1,10 +1,10 @@
 ﻿@page "/categories"
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.AspNetCore.Components.QuickGrid
-@using R2Model.Entities
-@using R2Model.Context
+@using R2.Data.Entities
+@using R2.Data.Context
 @implements IAsyncDisposable
-@inject IDbContextFactory<R2Model.Context.R2DbContext> DbFactory
+@inject IDbContextFactory<R2.Data.Context.R2DbContext> DbFactory
 
 <PageTitle>Index</PageTitle>
 

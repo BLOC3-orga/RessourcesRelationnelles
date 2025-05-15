@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\R2Model\R2Model.csproj" />
+    <ProjectReference Include="..\R2.Data\R2.Data.csproj" />
   </ItemGroup>
 
 </Project>
