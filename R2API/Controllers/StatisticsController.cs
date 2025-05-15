@@ -1,108 +1,102 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using R2Model.Context;
 using R2Model.Entities;
 
-namespace R2API.Controllers
+namespace R2API.Controllers;
+
+[Route("api/[controller]")]
+[ApiController]
+public class StatisticsController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class StatisticsController : ControllerBase
+    private readonly R2DbContext _context;
+
+    public StatisticsController(R2DbContext context)
     {
-        private readonly R2DbContext _context;
+        _context = context;
+    }
 
-        public StatisticsController(R2DbContext context)
+    // GET: api/Statistics
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<Statistic>>> GetStatistics()
+    {
+        return await _context.Statistics.ToListAsync();
+    }
+
+    // GET: api/Statistics/5
+    [HttpGet("{id}")]
+    public async Task<ActionResult<Statistic>> GetStatistic(int id)
+    {
+        var statistic = await _context.Statistics.FindAsync(id);
+
+        if (statistic == null)
         {
-            _context = context;
+            return NotFound();
         }
 
-        // GET: api/Statistics
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Statistic>>> GetStatistics()
+        return statistic;
+    }
+
+    // PUT: api/Statistics/5
+    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+    [HttpPut("{id}")]
+    public async Task<IActionResult> PutStatistic(int id, Statistic statistic)
+    {
+        if (id != statistic.Id)
         {
-            return await _context.Statistics.ToListAsync();
+            return BadRequest();
         }
 
-        // GET: api/Statistics/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Statistic>> GetStatistic(int id)
-        {
-            var statistic = await _context.Statistics.FindAsync(id);
+        _context.Entry(statistic).State = EntityState.Modified;
 
-            if (statistic == null)
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!StatisticExists(id))
             {
                 return NotFound();
             }
-
-            return statistic;
-        }
-
-        // PUT: api/Statistics/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutStatistic(int id, Statistic statistic)
-        {
-            if (id != statistic.Id)
+            else
             {
-                return BadRequest();
+                throw;
             }
-
-            _context.Entry(statistic).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!StatisticExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
         }
 
-        // POST: api/Statistics
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Statistic>> PostStatistic(Statistic statistic)
+        return NoContent();
+    }
+
+    // POST: api/Statistics
+    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+    [HttpPost]
+    public async Task<ActionResult<Statistic>> PostStatistic(Statistic statistic)
+    {
+        _context.Statistics.Add(statistic);
+        await _context.SaveChangesAsync();
+
+        return CreatedAtAction("GetStatistic", new { id = statistic.Id }, statistic);
+    }
+
+    // DELETE: api/Statistics/5
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteStatistic(int id)
+    {
+        var statistic = await _context.Statistics.FindAsync(id);
+        if (statistic == null)
         {
-            _context.Statistics.Add(statistic);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetStatistic", new { id = statistic.Id }, statistic);
+            return NotFound();
         }
 
-        // DELETE: api/Statistics/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteStatistic(int id)
-        {
-            var statistic = await _context.Statistics.FindAsync(id);
-            if (statistic == null)
-            {
-                return NotFound();
-            }
+        _context.Statistics.Remove(statistic);
+        await _context.SaveChangesAsync();
 
-            _context.Statistics.Remove(statistic);
-            await _context.SaveChangesAsync();
+        return NoContent();
+    }
 
-            return NoContent();
-        }
-
-        private bool StatisticExists(int id)
-        {
-            return _context.Statistics.Any(e => e.Id == id);
-        }
+    private bool StatisticExists(int id)
+    {
+        return _context.Statistics.Any(e => e.Id == id);
     }
 }

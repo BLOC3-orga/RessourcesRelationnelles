@@ -1,108 +1,102 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using R2Model.Context;
 using R2Model.Entities;
 
-namespace R2API.Controllers
+namespace R2API.Controllers;
+
+[Route("api/[controller]")]
+[ApiController]
+public class ProgressionsController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class ProgressionsController : ControllerBase
+    private readonly R2DbContext _context;
+
+    public ProgressionsController(R2DbContext context)
     {
-        private readonly R2DbContext _context;
+        _context = context;
+    }
 
-        public ProgressionsController(R2DbContext context)
+    // GET: api/Progressions
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<Progression>>> GetProgressions()
+    {
+        return await _context.Progressions.ToListAsync();
+    }
+
+    // GET: api/Progressions/5
+    [HttpGet("{id}")]
+    public async Task<ActionResult<Progression>> GetProgression(int id)
+    {
+        var progression = await _context.Progressions.FindAsync(id);
+
+        if (progression == null)
         {
-            _context = context;
+            return NotFound();
         }
 
-        // GET: api/Progressions
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Progression>>> GetProgressions()
+        return progression;
+    }
+
+    // PUT: api/Progressions/5
+    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+    [HttpPut("{id}")]
+    public async Task<IActionResult> PutProgression(int id, Progression progression)
+    {
+        if (id != progression.Id)
         {
-            return await _context.Progressions.ToListAsync();
+            return BadRequest();
         }
 
-        // GET: api/Progressions/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Progression>> GetProgression(int id)
-        {
-            var progression = await _context.Progressions.FindAsync(id);
+        _context.Entry(progression).State = EntityState.Modified;
 
-            if (progression == null)
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!ProgressionExists(id))
             {
                 return NotFound();
             }
-
-            return progression;
-        }
-
-        // PUT: api/Progressions/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutProgression(int id, Progression progression)
-        {
-            if (id != progression.Id)
+            else
             {
-                return BadRequest();
+                throw;
             }
-
-            _context.Entry(progression).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!ProgressionExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
         }
 
-        // POST: api/Progressions
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Progression>> PostProgression(Progression progression)
+        return NoContent();
+    }
+
+    // POST: api/Progressions
+    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+    [HttpPost]
+    public async Task<ActionResult<Progression>> PostProgression(Progression progression)
+    {
+        _context.Progressions.Add(progression);
+        await _context.SaveChangesAsync();
+
+        return CreatedAtAction("GetProgression", new { id = progression.Id }, progression);
+    }
+
+    // DELETE: api/Progressions/5
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteProgression(int id)
+    {
+        var progression = await _context.Progressions.FindAsync(id);
+        if (progression == null)
         {
-            _context.Progressions.Add(progression);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetProgression", new { id = progression.Id }, progression);
+            return NotFound();
         }
 
-        // DELETE: api/Progressions/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteProgression(int id)
-        {
-            var progression = await _context.Progressions.FindAsync(id);
-            if (progression == null)
-            {
-                return NotFound();
-            }
+        _context.Progressions.Remove(progression);
+        await _context.SaveChangesAsync();
 
-            _context.Progressions.Remove(progression);
-            await _context.SaveChangesAsync();
+        return NoContent();
+    }
 
-            return NoContent();
-        }
-
-        private bool ProgressionExists(int id)
-        {
-            return _context.Progressions.Any(e => e.Id == id);
-        }
+    private bool ProgressionExists(int id)
+    {
+        return _context.Progressions.Any(e => e.Id == id);
     }
 }

@@ -1,108 +1,102 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using R2Model.Context;
 using R2Model.Entities;
 
-namespace R2API.Controllers
+namespace R2API.Controllers;
+
+[Route("api/[controller]")]
+[ApiController]
+public class ResourcesController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class ResourcesController : ControllerBase
+    private readonly R2DbContext _context;
+
+    public ResourcesController(R2DbContext context)
     {
-        private readonly R2DbContext _context;
+        _context = context;
+    }
 
-        public ResourcesController(R2DbContext context)
+    // GET: api/Resources
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<Resource>>> GetRessources()
+    {
+        return await _context.Ressources.ToListAsync();
+    }
+
+    // GET: api/Resources/5
+    [HttpGet("{id}")]
+    public async Task<ActionResult<Resource>> GetResource(int id)
+    {
+        var resource = await _context.Ressources.FindAsync(id);
+
+        if (resource == null)
         {
-            _context = context;
+            return NotFound();
         }
 
-        // GET: api/Resources
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Resource>>> GetRessources()
+        return resource;
+    }
+
+    // PUT: api/Resources/5
+    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+    [HttpPut("{id}")]
+    public async Task<IActionResult> PutResource(int id, Resource resource)
+    {
+        if (id != resource.Id)
         {
-            return await _context.Ressources.ToListAsync();
+            return BadRequest();
         }
 
-        // GET: api/Resources/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Resource>> GetResource(int id)
-        {
-            var resource = await _context.Ressources.FindAsync(id);
+        _context.Entry(resource).State = EntityState.Modified;
 
-            if (resource == null)
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!ResourceExists(id))
             {
                 return NotFound();
             }
-
-            return resource;
-        }
-
-        // PUT: api/Resources/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutResource(int id, Resource resource)
-        {
-            if (id != resource.Id)
+            else
             {
-                return BadRequest();
+                throw;
             }
-
-            _context.Entry(resource).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!ResourceExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
         }
 
-        // POST: api/Resources
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Resource>> PostResource(Resource resource)
+        return NoContent();
+    }
+
+    // POST: api/Resources
+    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+    [HttpPost]
+    public async Task<ActionResult<Resource>> PostResource(Resource resource)
+    {
+        _context.Ressources.Add(resource);
+        await _context.SaveChangesAsync();
+
+        return CreatedAtAction("GetResource", new { id = resource.Id }, resource);
+    }
+
+    // DELETE: api/Resources/5
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteResource(int id)
+    {
+        var resource = await _context.Ressources.FindAsync(id);
+        if (resource == null)
         {
-            _context.Ressources.Add(resource);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetResource", new { id = resource.Id }, resource);
+            return NotFound();
         }
 
-        // DELETE: api/Resources/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteResource(int id)
-        {
-            var resource = await _context.Ressources.FindAsync(id);
-            if (resource == null)
-            {
-                return NotFound();
-            }
+        _context.Ressources.Remove(resource);
+        await _context.SaveChangesAsync();
 
-            _context.Ressources.Remove(resource);
-            await _context.SaveChangesAsync();
+        return NoContent();
+    }
 
-            return NoContent();
-        }
-
-        private bool ResourceExists(int id)
-        {
-            return _context.Ressources.Any(e => e.Id == id);
-        }
+    private bool ResourceExists(int id)
+    {
+        return _context.Ressources.Any(e => e.Id == id);
     }
 }
