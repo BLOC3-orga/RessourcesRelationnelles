@@ -1,4 +1,4 @@
-﻿using R2BackOffice.Components;
+﻿using R2.UI.Components;
 using Microsoft.EntityFrameworkCore;
 using R2Model.Context;
 

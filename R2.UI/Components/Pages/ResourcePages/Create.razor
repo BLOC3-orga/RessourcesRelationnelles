@@ -1,0 +1,147 @@
+﻿@page "/resources/create"
+@using Microsoft.EntityFrameworkCore
+@using R2Model.Entities
+@using R2Model.Enums
+@inject IDbContextFactory<R2Model.Context.R2DbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Créer une ressource</PageTitle>
+
+<div class="container-fluid py-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h2 class="mb-0">Créer une nouvelle ressource</h2>
+        </div>
+        
+        <div class="card-body">
+            <EditForm method="post" Model="Resource" OnValidSubmit="AddResource" FormName="create" Enhance>
+                <DataAnnotationsValidator />
+                <ValidationSummary class="alert alert-danger" role="alert"/>
+                
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="form-group mb-4">
+                            <label for="name" class="form-label fw-bold">Nom de la ressource <span class="text-danger">*</span></label>
+                            <InputText id="name" @bind-Value="Resource.Name" class="form-control form-control-lg" placeholder="Nom de la ressource" />
+                            <ValidationMessage For="() => Resource.Name" class="text-danger" />
+                        </div>
+                        
+                        <div class="form-group mb-4">
+                            <label for="description" class="form-label fw-bold">Description <span class="text-danger">*</span></label>
+                            <InputTextArea id="description" @bind-Value="Resource.Description" class="form-control" rows="5" placeholder="Description détaillée de la ressource..." />
+                            <ValidationMessage For="() => Resource.Description" class="text-danger" />
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="form-group mb-3">
+                            <label for="type" class="form-label fw-bold">Type <span class="text-danger">*</span></label>
+                            <InputSelect id="type" @bind-Value="Resource.Type" class="form-select">
+                                @foreach (ResourceType type in Enum.GetValues(typeof(ResourceType)))
+                                {
+                                    <option value="@type">@GetResourceTypeDisplayName(type)</option>
+                                }
+                            </InputSelect>
+                            <ValidationMessage For="() => Resource.Type" class="text-danger" />
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="form-group mb-3">
+                            <label for="status" class="form-label fw-bold">Statut <span class="text-danger">*</span></label>
+                            <InputSelect id="status" @bind-Value="Resource.Status" class="form-select">
+                                @foreach (ResourceStatus status in Enum.GetValues(typeof(ResourceStatus)))
+                                {
+                                    <option value="@status">@GetResourceStatusDisplayName(status)</option>
+                                }
+                            </InputSelect>
+                            <ValidationMessage For="() => Resource.Status" class="text-danger" />
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="form-group mb-3">
+                            <label for="categoryid" class="form-label fw-bold">Catégorie <span class="text-danger">*</span></label>
+                            <InputSelect id="categoryid" @bind-Value="Resource.CategoryId" class="form-select" required>
+                                <option value="">Sélectionner une catégorie</option>
+                                @if (Categories != null)
+                                {
+                                    @foreach (var category in Categories)
+                                    {
+                                        <option value="@category.Id">@category.Name</option>
+                                    }
+                                }
+                            </InputSelect>
+                            <ValidationMessage For="() => Resource.CategoryId" class="text-danger" />
+                            <small class="form-text text-muted">Sélection obligatoire pour catégoriser votre ressource.</small>
+                        </div>
+                    </div>
+                </div>
+                                
+                <div class="d-flex justify-content-between border-top pt-4">
+                    <a href="@($"/resources")" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Retour à la liste
+                    </a>
+                    <div>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-plus-circle"></i> Créer la ressource
+                        </button>
+                    </div>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromForm]
+    private Resource Resource { get; set; } = new() { CreationDate = DateTime.Now };
+
+    private List<Category>? Categories { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        Categories = await context.Categories.ToListAsync();
+
+        // Initialiser avec des valeurs par défaut si nécessaire
+        if (Resource.Status == 0)
+            Resource.Status = ResourceStatus.Private;
+
+        if (Resource.Type == 0)
+            Resource.Type = ResourceType.Activity;
+    }
+
+    private string GetResourceTypeDisplayName(ResourceType type)
+    {
+        return type switch
+        {
+            ResourceType.Activity => "Activité",
+            ResourceType.Game => "Jeu",
+            ResourceType.Document => "Document",
+            _ => type.ToString()
+        };
+    }
+
+    private string GetResourceStatusDisplayName(ResourceStatus status)
+    {
+        return status switch
+        {
+            ResourceStatus.Private => "Privé",
+            ResourceStatus.Public => "Public",
+            ResourceStatus.Draft => "Brouillon",
+            _ => status.ToString()
+        };
+    }
+
+    // To protect from overposting attacks, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
+    private async Task AddResource()
+    {
+        using var context = DbFactory.CreateDbContext();
+        context.Ressources.Add(Resource);
+        await context.SaveChangesAsync();
+        NavigationManager.NavigateTo("/resources");
+    }
+}

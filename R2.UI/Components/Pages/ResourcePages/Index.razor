@@ -1,0 +1,304 @@
+﻿@page "/"
+@page "/resources"
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using R2Model.Entities
+@using R2Model.Context
+@using R2Model.Enums
+@implements IAsyncDisposable
+@inject IDbContextFactory<R2Model.Context.R2DbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Ressources</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Ressources</h1>
+    <div>
+        <a href="resources/create" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Créer une nouvelle ressource
+        </a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header bg-light">
+        <h5 class="mb-0">Filtres</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label for="statusFilter" class="form-label">Statut</label>
+                <select id="statusFilter" class="form-select" @bind="statusFilter">
+                    <option value="-1">Tous</option>
+                    @foreach(var status in Enum.GetValues(typeof(ResourceStatus)))
+                    {
+                        <option value="@((int)status)">@GetStatusDisplayName((ResourceStatus)status)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="typeFilter" class="form-label">Type</label>
+                <select id="typeFilter" class="form-select" @bind="typeFilter">
+                    <option value="-1">Tous</option>
+                    @foreach(var type in Enum.GetValues(typeof(ResourceType)))
+                    {
+                        <option value="@((int)type)">@GetTypeDisplayName((ResourceType)type)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="categoryFilter" class="form-label">Catégorie</label>
+                <select id="categoryFilter" class="form-select" @bind="categoryFilter">
+                    <option value="-1">Toutes</option>
+                    @if (categories != null)
+                    {
+                        @foreach (var category in categories)
+                        {
+                            <option value="@category.Id">@category.Name</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button class="btn btn-outline-primary me-2" @onclick="ApplyFilters">
+                    <i class="bi bi-funnel"></i> Appliquer
+                </button>
+                <button class="btn btn-outline-secondary" @onclick="ResetFilters">
+                    <i class="bi bi-x-circle"></i> Réinitialiser
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (filteredResources == null)
+{
+    <div class="d-flex justify-content-center">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Chargement...</span>
+        </div>
+    </div>
+}
+else if (!filteredResources.Any())
+{
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle me-2"></i> Aucune ressource ne correspond aux critères de recherche.
+    </div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-3 g-4 mb-4">
+        @foreach (var resource in filteredResources)
+        {
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span class="badge @GetStatusBadgeClass(resource.Status)">
+                            @GetStatusDisplayName(resource.Status)
+                        </span>
+                        <span class="badge bg-primary">
+                            @GetTypeDisplayName(resource.Type)
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">@resource.Name</h5>
+                        <p class="card-text text-truncate">@resource.Description</p>
+                        <div class="d-flex justify-content-between small text-muted mb-2">
+                            <span><i class="bi bi-calendar3"></i> @resource.CreationDate.ToString("dd/MM/yyyy")</span>
+                            <span><i class="bi bi-tag"></i> @(resource.Category?.Name ?? "Sans catégorie")</span>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <div class="btn-group btn-group-sm w-100">
+                            <a href="@($"resources/details?id={resource.Id}")" class="btn btn-outline-primary">
+                                <i class="bi bi-eye"></i> Voir
+                            </a>
+                            <a href="@($"resources/edit?id={resource.Id}")" class="btn btn-outline-secondary">
+                                <i class="bi bi-pencil"></i> Modifier
+                            </a>
+                            <button class="btn btn-outline-danger" @onclick="() => ConfirmDelete(resource)">
+                                <i class="bi bi-trash"></i> Supprimer
+                            </button>
+                        </div>
+                        <div class="btn-group btn-group-sm w-100 mt-2">
+                            <button class="btn btn-outline-success" @onclick="() => AddToFavorites(resource)">
+                                <i class="bi bi-star"></i> Favoris
+                            </button>
+                            <button class="btn btn-outline-info" @onclick="() => MarkAsExploited(resource)">
+                                <i class="bi bi-check-circle"></i> Exploitée
+                            </button>
+                            <button class="btn btn-outline-warning" @onclick="() => ShareResource(resource)">
+                                <i class="bi bi-share"></i> Partager
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@if (showDeleteModal)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmer la suppression</h5>
+                    <button type="button" class="btn-close" @onclick="CancelDelete"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Êtes-vous sûr de vouloir supprimer la ressource <strong>@resourceToDelete?.Name</strong> ?</p>
+                    <p class="text-danger"><i class="bi bi-exclamation-triangle"></i> Cette action est irréversible.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CancelDelete">Annuler</button>
+                    <button type="button" class="btn btn-danger" @onclick="DeleteResource">Supprimer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    private R2DbContext context = default!;
+    private List<Resource> allResources;
+    private List<Resource> filteredResources;
+    private List<Category> categories;
+    private int statusFilter = -1;
+    private int typeFilter = -1;
+    private int categoryFilter = -1;
+    private bool showDeleteModal = false;
+    private Resource resourceToDelete;
+
+    protected override async Task OnInitializedAsync()
+    {
+        context = DbFactory.CreateDbContext();
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        allResources = await context.Ressources
+            .Include(r => r.Category)
+            .ToListAsync();
+            
+        categories = await context.Categories.ToListAsync();
+        
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        filteredResources = allResources;
+
+        if (statusFilter != -1)
+        {
+            filteredResources = filteredResources
+                .Where(r => (int)r.Status == statusFilter)
+                .ToList();
+        }
+
+        if (typeFilter != -1)
+        {
+            filteredResources = filteredResources
+                .Where(r => (int)r.Type == typeFilter)
+                .ToList();
+        }
+
+        if (categoryFilter != -1)
+        {
+            filteredResources = filteredResources
+                .Where(r => r.CategoryId == categoryFilter)
+                .ToList();
+        }
+    }
+
+    private void ResetFilters()
+    {
+        statusFilter = -1;
+        typeFilter = -1;
+        categoryFilter = -1;
+        ApplyFilters();
+    }
+
+    private void ConfirmDelete(Resource resource)
+    {
+        resourceToDelete = resource;
+        showDeleteModal = true;
+    }
+
+    private async Task DeleteResource()
+    {
+        if (resourceToDelete != null)
+        {
+            context.Ressources.Remove(resourceToDelete);
+            await context.SaveChangesAsync();
+            await LoadData();
+        }
+        
+        showDeleteModal = false;
+        resourceToDelete = null;
+    }
+
+    private void CancelDelete()
+    {
+        showDeleteModal = false;
+        resourceToDelete = null;
+    }
+
+    // Ces méthodes seraient à implémenter selon vos besoins
+    private async Task AddToFavorites(Resource resource)
+    {
+        // Logique pour ajouter aux favoris
+        // Nécessite l'utilisateur courant
+    }
+
+    private async Task MarkAsExploited(Resource resource)
+    {
+        // Logique pour marquer comme exploitée
+        // Nécessite l'utilisateur courant
+    }
+
+    private void ShareResource(Resource resource)
+    {
+        // Logique pour partager
+        // Pourrait ouvrir un modal avec options de partage
+    }
+
+    private string GetStatusDisplayName(ResourceStatus status)
+    {
+        return status switch
+        {
+            ResourceStatus.Private => "Privé",
+            ResourceStatus.Public => "Public",
+            ResourceStatus.Draft => "Brouillon",
+            _ => status.ToString()
+        };
+    }
+
+    private string GetTypeDisplayName(ResourceType type)
+    {
+        return type switch
+        {
+            ResourceType.Activity => "Activité",
+            ResourceType.Game => "Jeu",
+            ResourceType.Document => "Document",
+            _ => type.ToString()
+        };
+    }
+
+    private string GetStatusBadgeClass(ResourceStatus status)
+    {
+        return status switch
+        {
+            ResourceStatus.Private => "bg-secondary",
+            ResourceStatus.Public => "bg-success",
+            ResourceStatus.Draft => "bg-warning",
+            _ => "bg-info"
+        };
+    }
+
+    public async ValueTask DisposeAsync() => await context.DisposeAsync();
+}
