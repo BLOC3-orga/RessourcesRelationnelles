@@ -8,7 +8,6 @@ namespace R2Model.Context;
 public class R2DbContext : IdentityDbContext<User, IdentityRole<int>, int>
 {
     public DbSet<UserRight> UserRights { get; set; }
-    public DbSet<Role> Role { get; set; }
     public DbSet<Statistic> Statistics { get; set; }
     public DbSet<Resource> Ressources { get; set; }
     public DbSet<Comment> Comments { get; set; }

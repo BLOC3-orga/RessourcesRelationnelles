@@ -53,11 +53,6 @@ else
                     <ValidationMessage For="() => User.IsAccountActivated" class="text-danger" />
                 </div>
                 <div class="mb-3">
-                    <label for="roleid" class="form-label">RoleId:</label>
-                    <InputNumber id="roleid" @bind-Value="User.RoleId" class="form-control" />
-                    <ValidationMessage For="() => User.RoleId" class="text-danger" />
-                </div>
-                <div class="mb-3">
                     <label for="username" class="form-label">UserName:</label>
                     <InputText id="username" @bind-Value="User.UserName" class="form-control" />
                     <ValidationMessage For="() => User.UserName" class="text-danger" />

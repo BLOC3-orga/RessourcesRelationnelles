@@ -16,11 +16,6 @@ public class User : IdentityUser<int>
     public string City { get; set; } = string.Empty;
     public string Address { get; set; } = string.Empty;
     public bool IsAccountActivated { get; set; } = true;
-
-    [ForeignKey(nameof(Role))]
-    public int RoleId { get; set; }
-    public virtual Role? Role { get; set; }
-
     public ICollection<Resource>? FavoriteResources { get; set; }
     public ICollection<Resource>? ExploitedResources { get; set; }
     public ICollection<Resource>? DraftResources { get; set; }

@@ -21,21 +21,8 @@
     <PropertyColumn Property="user => user.City" />
     <PropertyColumn Property="user => user.Address" />
     <PropertyColumn Property="user => user.IsAccountActivated" />
-    <PropertyColumn Property="user => user.RoleId" />
-    <PropertyColumn Property="user => user.UserName" />
-    <PropertyColumn Property="user => user.NormalizedUserName" />
     <PropertyColumn Property="user => user.Email" />
-    <PropertyColumn Property="user => user.NormalizedEmail" />
     <PropertyColumn Property="user => user.EmailConfirmed" />
-    <PropertyColumn Property="user => user.PasswordHash" />
-    <PropertyColumn Property="user => user.SecurityStamp" />
-    <PropertyColumn Property="user => user.ConcurrencyStamp" />
-    <PropertyColumn Property="user => user.PhoneNumber" />
-    <PropertyColumn Property="user => user.PhoneNumberConfirmed" />
-    <PropertyColumn Property="user => user.TwoFactorEnabled" />
-    <PropertyColumn Property="user => user.LockoutEnd" />
-    <PropertyColumn Property="user => user.LockoutEnabled" />
-    <PropertyColumn Property="user => user.AccessFailedCount" />
 
     <TemplateColumn Context="user">
         <a href="@($"users/edit?id={user.Id}")">Edit</a> |
