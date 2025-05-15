@@ -1,184 +1,174 @@
-﻿@page "/users/edit"
+﻿@page "/users/edit/{UserId:int}"
+
+@using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
 @using R2Model.Entities
-@inject IDbContextFactory<R2Model.Context.R2DbContext> DbFactory
+
+@inject UserManager<User> UserManager
+@inject RoleManager<IdentityRole<int>> RoleManager
 @inject NavigationManager NavigationManager
+@inject ILogger<Edit> Logger
 
-<PageTitle>Edit</PageTitle>
+<h1>Modifier l'utilisateur</h1>
 
-<h1>Edit</h1>
-
-<h2>User</h2>
-<hr />
-@if (User is null)
+@if (IsLoading)
 {
-    <p><em>Loading...</em></p>
+    <p><em>Chargement...</em></p>
+}
+else if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <p class="text-danger">@((MarkupString)ErrorMessage)</p>
+}
+else if (Model == null)
+{
+    <p class="text-danger">Utilisateur introuvable.</p>
 }
 else
 {
-    <div class="row">
-        <div class="col-md-4">
-            <EditForm method="post" Model="User" OnValidSubmit="UpdateUser" FormName="edit" Enhance>
-                <DataAnnotationsValidator />
-                <ValidationSummary role="alert"/>
-                <input type="hidden" name="User.Id" value="@User.Id" />
-                <div class="mb-3">
-                    <label for="name" class="form-label">Name:</label>
-                    <InputText id="name" @bind-Value="User.Name" class="form-control" />
-                    <ValidationMessage For="() => User.Name" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="lastname" class="form-label">LastName:</label>
-                    <InputText id="lastname" @bind-Value="User.LastName" class="form-control" />
-                    <ValidationMessage For="() => User.LastName" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="pseudo" class="form-label">Pseudo:</label>
-                    <InputText id="pseudo" @bind-Value="User.Pseudo" class="form-control" />
-                    <ValidationMessage For="() => User.Pseudo" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="city" class="form-label">City:</label>
-                    <InputText id="city" @bind-Value="User.City" class="form-control" />
-                    <ValidationMessage For="() => User.City" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="address" class="form-label">Address:</label>
-                    <InputText id="address" @bind-Value="User.Address" class="form-control" />
-                    <ValidationMessage For="() => User.Address" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="isaccountactivated" class="form-label">IsAccountActivated:</label>
-                    <InputCheckbox id="isaccountactivated" @bind-Value="User.IsAccountActivated" class="form-check-input" />
-                    <ValidationMessage For="() => User.IsAccountActivated" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="username" class="form-label">UserName:</label>
-                    <InputText id="username" @bind-Value="User.UserName" class="form-control" />
-                    <ValidationMessage For="() => User.UserName" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="normalizedusername" class="form-label">NormalizedUserName:</label>
-                    <InputText id="normalizedusername" @bind-Value="User.NormalizedUserName" class="form-control" />
-                    <ValidationMessage For="() => User.NormalizedUserName" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="email" class="form-label">Email:</label>
-                    <InputText id="email" @bind-Value="User.Email" class="form-control" />
-                    <ValidationMessage For="() => User.Email" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="normalizedemail" class="form-label">NormalizedEmail:</label>
-                    <InputText id="normalizedemail" @bind-Value="User.NormalizedEmail" class="form-control" />
-                    <ValidationMessage For="() => User.NormalizedEmail" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="emailconfirmed" class="form-label">EmailConfirmed:</label>
-                    <InputCheckbox id="emailconfirmed" @bind-Value="User.EmailConfirmed" class="form-check-input" />
-                    <ValidationMessage For="() => User.EmailConfirmed" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="passwordhash" class="form-label">PasswordHash:</label>
-                    <InputText id="passwordhash" @bind-Value="User.PasswordHash" class="form-control" />
-                    <ValidationMessage For="() => User.PasswordHash" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="securitystamp" class="form-label">SecurityStamp:</label>
-                    <InputText id="securitystamp" @bind-Value="User.SecurityStamp" class="form-control" />
-                    <ValidationMessage For="() => User.SecurityStamp" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="concurrencystamp" class="form-label">ConcurrencyStamp:</label>
-                    <InputText id="concurrencystamp" @bind-Value="User.ConcurrencyStamp" class="form-control" />
-                    <ValidationMessage For="() => User.ConcurrencyStamp" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="phonenumber" class="form-label">PhoneNumber:</label>
-                    <InputText id="phonenumber" @bind-Value="User.PhoneNumber" class="form-control" />
-                    <ValidationMessage For="() => User.PhoneNumber" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="phonenumberconfirmed" class="form-label">PhoneNumberConfirmed:</label>
-                    <InputCheckbox id="phonenumberconfirmed" @bind-Value="User.PhoneNumberConfirmed" class="form-check-input" />
-                    <ValidationMessage For="() => User.PhoneNumberConfirmed" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="twofactorenabled" class="form-label">TwoFactorEnabled:</label>
-                    <InputCheckbox id="twofactorenabled" @bind-Value="User.TwoFactorEnabled" class="form-check-input" />
-                    <ValidationMessage For="() => User.TwoFactorEnabled" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="lockoutend" class="form-label">LockoutEnd:</label>
-                    <InputDate id="lockoutend" @bind-Value="User.LockoutEnd" class="form-control" />
-                    <ValidationMessage For="() => User.LockoutEnd" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="lockoutenabled" class="form-label">LockoutEnabled:</label>
-                    <InputCheckbox id="lockoutenabled" @bind-Value="User.LockoutEnabled" class="form-check-input" />
-                    <ValidationMessage For="() => User.LockoutEnabled" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="accessfailedcount" class="form-label">AccessFailedCount:</label>
-                    <InputNumber id="accessfailedcount" @bind-Value="User.AccessFailedCount" class="form-control" />
-                    <ValidationMessage For="() => User.AccessFailedCount" class="text-danger" />
-                </div>
-                <button type="submit" class="btn btn-primary">Save</button>
-            </EditForm>
+    <EditForm Model="@Model" OnValidSubmit="UpdateUserAsync" FormName="editUserForm">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div>
+            <label>Nom</label>
+            <InputText @bind-Value="Model.Name" class="form-control" />
         </div>
-    </div>
+        <div>
+            <label>Prénom</label>
+            <InputText @bind-Value="Model.LastName" class="form-control" />
+        </div>
+        <div>
+            <label>Pseudo</label>
+            <InputText @bind-Value="Model.Pseudo" class="form-control" />
+        </div>
+        <div>
+            <label>Ville</label>
+            <InputText @bind-Value="Model.City" class="form-control" />
+        </div>
+        <div>
+            <label>Adresse</label>
+            <InputText @bind-Value="Model.Address" class="form-control" />
+        </div>
+
+        <div>
+            <label>Rôle</label>
+            <InputSelect @bind-Value="SelectedRole" class="form-select">
+                @foreach (var role in Roles)
+                {
+                    <option value="@role.Name">@role.Name</option>
+                }
+            </InputSelect>
+        </div>
+
+        <button type="submit" class="btn btn-primary mt-3">Enregistrer</button>
+
+        @if (IsSuccess)
+        {
+            <p class="text-success mt-2">Utilisateur mis à jour avec succès.</p>
+        }
+    </EditForm>
 }
 
-<div>
-    <a href="/users">Back to List</a>
-</div>
-
 @code {
-    [SupplyParameterFromQuery]
-    private int Id { get; set; }
+    [Parameter]
+    public int UserId { get; set; }
 
-    [SupplyParameterFromForm]
-    private User? User { get; set; }
+    private User? Model;
+    private List<IdentityRole<int>> Roles = new();
+    private string SelectedRole = string.Empty;
+    private bool IsLoading = true;
+    private string ErrorMessage = string.Empty;
+    private bool IsSuccess = false;
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = DbFactory.CreateDbContext();
-        User ??= await context.Users.FirstOrDefaultAsync(m => m.Id == Id);
-
-        if (User is null)
-        {
-            NavigationManager.NavigateTo("notfound");
-        }
-    }
-
-    // To protect from overposting attacks, enable the specific properties you want to bind to.
-    // For more information, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
-    private async Task UpdateUser()
-    {
-        using var context = DbFactory.CreateDbContext();
-        context.Attach(User!).State = EntityState.Modified;
-
         try
         {
-            await context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!UserExists(User!.Id))
+            Roles = await RoleManager.Roles.ToListAsync();
+            Model = await UserManager.FindByIdAsync(UserId.ToString());
+
+            if (Model != null)
             {
-                NavigationManager.NavigateTo("notfound");
+                var userRoles = await UserManager.GetRolesAsync(Model);
+                SelectedRole = userRoles.FirstOrDefault() ?? Roles.FirstOrDefault()?.Name ?? string.Empty;
+
+                Logger.LogInformation($"Utilisateur chargé : {Model.Name} {Model.LastName}, rôle actuel : {SelectedRole}");
             }
             else
             {
-                throw;
+                ErrorMessage = "Utilisateur introuvable.";
             }
         }
-
-        NavigationManager.NavigateTo("/users");
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Erreur lors du chargement de l'utilisateur");
+            ErrorMessage = "Une erreur est survenue lors du chargement.";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
-    private bool UserExists(int id)
+    private async Task UpdateUserAsync()
     {
-        using var context = DbFactory.CreateDbContext();
-        return context.Users.Any(e => e.Id == id);
+        ErrorMessage = string.Empty;
+        IsSuccess = false;
+
+        if (Model == null)
+        {
+            ErrorMessage = "Utilisateur non chargé.";
+            return;
+        }
+
+        try
+        {
+            Logger.LogInformation("Début de la mise à jour de l'utilisateur.");
+            Logger.LogInformation($"Valeurs du modèle : Name = {Model.Name}, LastName = {Model.LastName}, Pseudo = {Model.Pseudo}");
+
+            var userInDb = await UserManager.FindByIdAsync(Model.Id.ToString());
+            if (userInDb == null)
+            {
+                ErrorMessage = "Utilisateur introuvable en base.";
+                return;
+            }
+
+            userInDb.Name = Model.Name;
+            userInDb.LastName = Model.LastName;
+            userInDb.Pseudo = Model.Pseudo;
+            userInDb.City = Model.City;
+            userInDb.Address = Model.Address;
+
+            var updateResult = await UserManager.UpdateAsync(userInDb);
+            if (!updateResult.Succeeded)
+            {
+                ErrorMessage = string.Join("<br/>", updateResult.Errors.Select(e => e.Description));
+                return;
+            }
+
+            // Mise à jour des rôles
+            var currentRoles = await UserManager.GetRolesAsync(userInDb);
+            var removeResult = await UserManager.RemoveFromRolesAsync(userInDb, currentRoles);
+            if (!removeResult.Succeeded)
+            {
+                ErrorMessage = string.Join("<br/>", removeResult.Errors.Select(e => e.Description));
+                return;
+            }
+
+            var addRoleResult = await UserManager.AddToRoleAsync(userInDb, SelectedRole);
+            if (!addRoleResult.Succeeded)
+            {
+                ErrorMessage = string.Join("<br/>", addRoleResult.Errors.Select(e => e.Description));
+                return;
+            }
+
+            IsSuccess = true;
+            Logger.LogInformation("Mise à jour de l'utilisateur réussie.");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Erreur lors de la mise à jour de l'utilisateur");
+            ErrorMessage = "Une erreur est survenue lors de la mise à jour.";
+        }
     }
 }
