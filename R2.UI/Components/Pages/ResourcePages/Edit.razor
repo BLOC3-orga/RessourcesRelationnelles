@@ -12,7 +12,7 @@
         <div class="card-header bg-primary text-white">
             <h2 class="mb-0">Modifier une ressource</h2>
         </div>
-        
+
         @if (Resource is null)
         {
             <div class="card-body">
@@ -29,9 +29,9 @@
                 <EditForm method="post" Model="Resource" OnValidSubmit="UpdateResource" FormName="edit" Enhance>
                     <DataAnnotationsValidator />
                     <ValidationSummary role="alert" class="alert alert-danger" />
-                    
+
                     <input type="hidden" name="Resource.Id" value="@Resource.Id" />
-                    
+
                     <div class="row mb-4">
                         <div class="col-md-12">
                             <div class="form-group mb-4">
@@ -39,7 +39,7 @@
                                 <InputText id="name" @bind-Value="Resource.Name" class="form-control form-control-lg" placeholder="Nom de la ressource" />
                                 <ValidationMessage For="() => Resource.Name" class="text-danger" />
                             </div>
-                            
+
                             <div class="form-group mb-4">
                                 <label for="description" class="form-label fw-bold">Description <span class="text-danger">*</span></label>
                                 <InputTextArea id="description" @bind-Value="Resource.Description" class="form-control" rows="5" placeholder="Description détaillée de la ressource..." />
@@ -47,7 +47,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="row mb-4">
                         <div class="col-md-4">
                             <div class="form-group mb-3">
@@ -61,7 +61,7 @@
                                 <ValidationMessage For="() => Resource.Type" class="text-danger" />
                             </div>
                         </div>
-                        
+
                         <div class="col-md-4">
                             <div class="form-group mb-3">
                                 <label for="status" class="form-label fw-bold">Statut <span class="text-danger">*</span></label>
@@ -89,9 +89,9 @@
                                     }
                                 </InputSelect>
                                 <ValidationMessage For="() => Resource.CategoryId" class="text-danger" />
+                            </div>
                         </div>
                     </div>
-                                        
                     <div class="d-flex justify-content-between border-top pt-4">
                         <a href="@($"/resources")" class="btn btn-outline-secondary">
                             <i class="bi bi-arrow-left"></i> Retour à la liste
@@ -126,7 +126,7 @@
         {
             NavigationManager.NavigateTo("notfound");
         }
-        
+
         Categories = await context.Categories.ToListAsync();
     }
 
