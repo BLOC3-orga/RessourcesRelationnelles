@@ -1,36 +1,139 @@
 ﻿@page "/statistics"
 @using Microsoft.EntityFrameworkCore
-@using Microsoft.AspNetCore.Components.QuickGrid
 @using R2.Data.Entities
 @using R2.Data.Context
 @implements IAsyncDisposable
 @inject IDbContextFactory<R2.Data.Context.R2DbContext> DbFactory
+@inject NavigationManager NavigationManager
 
-<PageTitle>Index</PageTitle>
+<PageTitle>Statistiques</PageTitle>
 
-<h1>Index</h1>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Statistiques</h1>
+    <div>
+        <a href="statistics/create" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Créer une nouvelle statistique
+        </a>
+    </div>
+</div>
 
-<p>
-    <a href="statistics/create">Create New</a>
-</p>
+@if (isLoading)
+{
+    <div class="d-flex justify-content-center my-5">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Chargement...</span>
+        </div>
+    </div>
+}
+else
+{
+    @* LISTE DES STATISTIQUES *@
+    <div class="card shadow-sm">
+        <div class="list-group list-group-flush">
+            @foreach (var statistic in statistics)
+            {
+                <div class="list-group-item list-group-item-action p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-1">Statistique #@statistic.Id</h5>
+                            <p class="small text-muted mb-0">
+                                <i class="bi bi-book"></i> Ressources lues: <span class="badge bg-info">@statistic.RessourcesRead</span>
+                                <span class="ms-3"><i class="bi bi-file-earmark-plus"></i> Ressources créées: <span class="badge bg-success">@statistic.RessourcesCreated</span></span>
+                            </p>
+                        </div>
+                        <div>
+                            <div class="btn-group btn-group-sm">
+                                <a href="@($"statistics/details?id={statistic.Id}")" class="btn btn-outline-info">
+                                    <i class="bi bi-info-circle"></i> Détails
+                                </a>
+                                <a href="@($"statistics/edit?id={statistic.Id}")" class="btn btn-outline-secondary">
+                                    <i class="bi bi-pencil"></i> Modifier
+                                </a>
+                                <button class="btn btn-outline-danger" @onclick="() => ConfirmDelete(statistic)">
+                                    <i class="bi bi-trash"></i> Supprimer
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
 
-<QuickGrid Class="table" Items="context.Statistics">
-    <PropertyColumn Property="statistic => statistic.RessourcesRead" />
-    <PropertyColumn Property="statistic => statistic.RessourcesCreated" />
-
-    <TemplateColumn Context="statistic">
-        <a href="@($"statistics/edit?id={statistic.Id}")">Edit</a> |
-        <a href="@($"statistics/details?id={statistic.Id}")">Details</a> |
-        <a href="@($"statistics/delete?id={statistic.Id}")">Delete</a>
-    </TemplateColumn>
-</QuickGrid>
+@if (showDeleteModal)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmer la suppression</h5>
+                    <button type="button" class="btn-close" @onclick="CancelDelete"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Êtes-vous sûr de vouloir supprimer la statistique <strong>#@statisticToDelete?.Id</strong> ?</p>
+                    <p class="text-danger">
+                        <i class="bi bi-exclamation-triangle"></i> Cette action est irréversible et supprimera définitivement ces données statistiques.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CancelDelete">Annuler</button>
+                    <button type="button" class="btn btn-danger" @onclick="DeleteStatistic">Supprimer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
 
 @code {
     private R2DbContext context = default!;
+    private List<Statistic> statistics = new List<Statistic>();
+    private bool isLoading = true;
+    private bool showDeleteModal = false;
+    private Statistic statisticToDelete;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        context = DbFactory.CreateDbContext();
+        try
+        {
+            context = DbFactory.CreateDbContext();
+            // Charger les statistiques
+            statistics = await context.Statistics.ToListAsync();
+        }
+        catch (Exception)
+        {
+            // Gérer les erreurs
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ConfirmDelete(Statistic statistic)
+    {
+        statisticToDelete = statistic;
+        showDeleteModal = true;
+    }
+
+    private async Task DeleteStatistic()
+    {
+        if (statisticToDelete != null)
+        {
+            context.Statistics.Remove(statisticToDelete);
+            await context.SaveChangesAsync();
+            statistics.Remove(statisticToDelete);
+        }
+
+        showDeleteModal = false;
+        statisticToDelete = null;
+    }
+
+    private void CancelDelete()
+    {
+        showDeleteModal = false;
+        statisticToDelete = null;
     }
 
     public async ValueTask DisposeAsync() => await context.DisposeAsync();
