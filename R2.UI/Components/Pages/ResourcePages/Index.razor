@@ -118,9 +118,9 @@ else
                             <a href="@($"resources/edit?id={resource.Id}")" class="btn btn-outline-secondary">
                                 <i class="bi bi-pencil"></i> Modifier
                             </a>
-                            <button class="btn btn-outline-danger" @onclick="() => ConfirmDelete(resource)">
+                            <a href="@($"resources/delete?id={resource.Id}")" class="btn btn-outline-danger">
                                 <i class="bi bi-trash"></i> Supprimer
-                            </button>
+                            </a>
                         </div>
                         <div class="btn-group btn-group-sm w-100 mt-2">
                             <button class="btn btn-outline-success" @onclick="() => AddToFavorites(resource)">
@@ -145,22 +145,72 @@ else
     <div class="modal fade show" style="display: block;" tabindex="-1" role="dialog">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Confirmer la suppression</h5>
-                    <button type="button" class="btn-close" @onclick="CancelDelete"></button>
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Confirmer la suppression
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CancelDelete"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Êtes-vous sûr de vouloir supprimer la ressource <strong>@resourceToDelete?.Name</strong> ?</p>
-                    <p class="text-danger"><i class="bi bi-exclamation-triangle"></i> Cette action est irréversible.</p>
+                    @if (isDeleting)
+                    {
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-danger" role="status">
+                                <span class="visually-hidden">Suppression en cours...</span>
+                            </div>
+                            <p class="mt-2">Suppression en cours...</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="mb-3">
+                            <p>Êtes-vous sûr de vouloir supprimer la ressource <strong>"@resourceToDelete?.Name"</strong> ?</p>
+
+                            @if (relatedItemsCount > 0)
+                            {
+                                <div class="alert alert-warning">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                    <strong>Attention :</strong> Cette ressource est utilisée dans @relatedItemsCount élément(s).
+                                    La suppression affectera tous ces éléments liés.
+                                </div>
+                            }
+
+                            <p class="text-danger">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                Cette action est irréversible.
+                            </p>
+                        </div>
+                    }
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" @onclick="CancelDelete">Annuler</button>
-                    <button type="button" class="btn btn-danger" @onclick="DeleteResource">Supprimer</button>
+                    <button type="button" class="btn btn-secondary" @onclick="CancelDelete" disabled="@isDeleting">
+                        Annuler
+                    </button>
+                    <button type="button" class="btn btn-danger" @onclick="DeleteResource" disabled="@isDeleting">
+                        <i class="bi bi-trash me-1"></i> Supprimer définitivement
+                    </button>
                 </div>
             </div>
         </div>
     </div>
     <div class="modal-backdrop fade show"></div>
+}
+
+@if (showDeletedToast)
+{
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 5">
+        <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-success text-white">
+                <i class="bi bi-check-circle me-2"></i>
+                <strong class="me-auto">Suppression réussie</strong>
+                <button type="button" class="btn-close btn-close-white" @onclick="() => showDeletedToast = false"></button>
+            </div>
+            <div class="toast-body">
+                La ressource a été supprimée avec succès.
+            </div>
+        </div>
+    </div>
 }
 
 @code {
@@ -172,7 +222,10 @@ else
     private int typeFilter = -1;
     private int categoryFilter = -1;
     private bool showDeleteModal = false;
+    private bool showDeletedToast = false;
+    private bool isDeleting = false;
     private Resource resourceToDelete;
+    private int relatedItemsCount = 0;
 
     protected override async Task OnInitializedAsync()
     {
@@ -225,9 +278,10 @@ else
         ApplyFilters();
     }
 
-    private void ConfirmDelete(Resource resource)
+    private async Task ConfirmDelete(Resource resource)
     {
         resourceToDelete = resource;
+
         showDeleteModal = true;
     }
 
@@ -235,19 +289,52 @@ else
     {
         if (resourceToDelete != null)
         {
-            context.Ressources.Remove(resourceToDelete);
-            await context.SaveChangesAsync();
-            await LoadData();
-        }
+            try
+            {
+                isDeleting = true;
 
-        showDeleteModal = false;
-        resourceToDelete = null;
+                // Supprimer les relations (si nécessaire)
+                // await DeleteRelatedItems(resourceToDelete.Id);
+
+                // Supprimer la ressource
+                context.Ressources.Remove(resourceToDelete);
+                await context.SaveChangesAsync();
+
+                // Rafraîchir les données
+                await LoadData();
+
+                // Afficher une notification de succès
+                showDeletedToast = true;
+
+                // Masquer la notification après 5 secondes
+                var timer = new System.Threading.Timer(_ =>
+                {
+                    InvokeAsync(() =>
+                    {
+                        showDeletedToast = false;
+                        StateHasChanged();
+                    });
+                }, null, 5000, Timeout.Infinite);
+            }
+            catch (Exception ex)
+            {
+                // Gérer l'erreur (vous pourriez ajouter un message d'erreur à afficher)
+                Console.Error.WriteLine($"Erreur lors de la suppression : {ex.Message}");
+            }
+            finally
+            {
+                isDeleting = false;
+                showDeleteModal = false;
+                resourceToDelete = null;
+            }
+        }
     }
 
     private void CancelDelete()
     {
         showDeleteModal = false;
         resourceToDelete = null;
+        relatedItemsCount = 0;
     }
 
     // TODO

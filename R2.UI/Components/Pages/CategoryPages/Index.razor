@@ -34,7 +34,7 @@
                     </div>
                     <div>
                         <div class="btn-group btn-group-sm">
-                            <a href="@($"categories/edit?id={category.Id}")" class="btn btn-outline-secondary">
+                            <a href="@($"categories/edit/{category.Id}")" class="btn btn-outline-secondary">
                                 <i class="bi bi-pencil"></i> Modifier
                             </a>
                             <button class="btn btn-outline-danger" @onclick="() => ConfirmDelete(category)">

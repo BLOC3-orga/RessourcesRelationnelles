@@ -1,99 +1,520 @@
-﻿@page "/categories/edit"
+﻿@page "/resources/details"
 @using Microsoft.EntityFrameworkCore
 @using R2.Data.Entities
+@using R2.Data.Enums
 @inject IDbContextFactory<R2.Data.Context.R2DbContext> DbFactory
 @inject NavigationManager NavigationManager
 
-<PageTitle>Modifier une catégorie</PageTitle>
+<PageTitle>Détails de la ressource</PageTitle>
 
-<div class="d-flex align-items-center mb-4">
-    <a href="/categories" class="btn btn-outline-secondary me-3">
-        <i class="bi bi-arrow-left"></i>
-    </a>
-    <h1 class="mb-0">Modifier la catégorie</h1>
-</div>
+@if (resource is null)
+{
+    <div class="d-flex justify-content-center my-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Chargement...</span>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h3 class="mb-0">@resource.Name</h3>
+            <span class="badge bg-light text-dark">
+                @GetTypeDisplayName(resource.Type)
+            </span>
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <div class="mb-4">
+                        <h4>Description</h4>
+                        <p class="lead">@resource.Description</p>
+                    </div>
 
-<div class="card shadow-sm">
-    <div class="card-body">
-        @if (Category is null)
-        {
-            <div class="d-flex justify-content-center py-4">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Chargement...</span>
+                    <!-- Contenu de la ressource -->
+                    <div class="mb-4">
+                        <h4>Contenu</h4>
+                        <div class="p-3 bg-light rounded">
+                            @if (resource.Type == ResourceType.Document)
+                            {
+                                <div class="document-preview">
+                                    <p><em>Aperçu du document</em></p>
+                                    <!-- Intégrer ici la visualisation du document -->
+                                </div>
+                            }
+                            else if (resource.Type == ResourceType.Activity)
+                            {
+                                <div class="activity-details">
+                                    <p><em>Détails de l'activité</em></p>
+                                    <!-- Intégrer ici les détails spécifiques à une activité -->
+                                </div>
+                            }
+                            else if (resource.Type == ResourceType.Game)
+                            {
+                                <div class="game-details">
+                                    <p><em>Détails du jeu</em></p>
+                                    <!-- Intégrer ici les détails spécifiques à un jeu -->
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Section commentaires -->
+                    <div class="mb-4">
+                        <h4>Commentaires</h4>
+                        @if (comments != null && comments.Any())
+                        {
+                            <div class="list-group mb-3">
+                                @foreach (var comment in comments)
+                                {
+                                    <div class="list-group-item">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">Utilisateur</h6>
+                                            <small>Date</small>
+                                        </div>
+                                        <p class="mb-1">@comment.Content</p>
+                                        <div class="d-flex justify-content-end gap-2">
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="() => ReplyToComment(comment)">
+                                                <i class="bi bi-reply"></i> Répondre
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-muted fst-italic">Aucun commentaire pour le moment.</p>
+                        }
+
+                        <!-- Formulaire d'ajout de commentaire -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Ajouter un commentaire</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <textarea class="form-control" rows="3" @bind="newCommentContent" placeholder="Votre commentaire..."></textarea>
+                                </div>
+                                <button class="btn btn-primary" @onclick="AddComment">
+                                    <i class="bi bi-send"></i> Envoyer
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <!-- Informations sur la ressource -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Informations</h5>
+                        </div>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Statut</span>
+                                <span class="badge @GetStatusBadgeClass(resource.Status)">
+                                    @GetStatusDisplayName(resource.Status)
+                                </span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Catégorie</span>
+                                <span>@(resource.Category?.Name ?? "Non catégorisé")</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Date de création</span>
+                                <span>@resource.CreationDate.ToString("dd/MM/yyyy")</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Créateur</span>
+                                <span>Nom du créateur</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Actions</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <!-- Actions principales -->
+                                <button class="btn btn-outline-primary" @onclick="ToggleFavorite">
+                                    <i class="bi bi-star@(isFavorite ? "-fill" : "")"></i>
+                                    @(isFavorite ? "Retirer des favoris" : "Ajouter aux favoris")
+                                </button>
+                                <button class="btn btn-outline-success" @onclick="ToggleExploited">
+                                    <i class="bi bi-check-circle@(isExploited ? "-fill" : "")"></i>
+                                    @(isExploited ? "Marquer comme non exploitée" : "Marquer comme exploitée")
+                                </button>
+                                <button class="btn btn-outline-info" @onclick="ShareResource">
+                                    <i class="bi bi-share"></i> Partager
+                                </button>
+
+                                @if (resource.Status == ResourceStatus.Draft)
+                                {
+                                    <button class="btn btn-outline-warning" @onclick="PublishResource">
+                                        <i class="bi bi-upload"></i> Publier
+                                    </button>
+                                }
+
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-secondary dropdown-toggle w-100" type="button" id="moreActionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bi bi-three-dots"></i> Plus d'actions
+                                    </button>
+                                    <ul class="dropdown-menu w-100" aria-labelledby="moreActionsDropdown">
+                                        <li>
+                                            <a class="dropdown-item" href="@($"resources/edit?id={resource.Id}")">
+                                                <i class="bi bi-pencil"></i> Modifier
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <button class="dropdown-item text-danger" @onclick="ConfirmDelete">
+                                                <i class="bi bi-trash"></i> Supprimer
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progression -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Progression</h5>
+                        </div>
+                        <div class="card-body">
+                            @if (progression != null)
+                            {
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>Avancement</span>
+                                        <span>@progression.Percentage%</span>
+                                    </div>
+                                    <div class="progress">
+                                        <div class="progress-bar" role="progressbar" style="width: @progression.Percentage%"
+                                             aria-valuenow="@progression.Percentage" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </div>
+                                <div class="text-muted small">
+                                    <div>Statut: @GetProgressionStatusDisplayName(progression.Status)</div>
+                                    <div>Dernière interaction: @progression.LastInteractionDate.ToString("dd/MM/yyyy")</div>
+                                </div>
+                                <div class="mt-3">
+                                    <button class="btn btn-sm btn-outline-primary w-100" @onclick="UpdateProgression">
+                                        <i class="bi bi-arrow-clockwise"></i> Mettre à jour la progression
+                                    </button>
+                                </div>
+                            }
+                            else
+                            {
+                                <p class="text-muted">Aucune progression enregistrée.</p>
+                                <button class="btn btn-sm btn-outline-primary w-100" @onclick="StartProgression">
+                                    <i class="bi bi-play"></i> Démarrer
+                                </button>
+                            }
+                        </div>
+                    </div>
                 </div>
             </div>
-        }
-        else
-        {
-            <EditForm method="post" Model="Category" OnValidSubmit="UpdateCategory" FormName="edit" Enhance>
-                <DataAnnotationsValidator />
-                <ValidationSummary class="alert alert-danger" role="alert" />
+        </div>
+        <div class="card-footer">
+            <a href="/resources" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Retour à la liste
+            </a>
+        </div>
+    </div>
+}
 
-                <input type="hidden" name="Category.Id" value="@Category.Id" />
-
-                <div class="mb-4">
-                    <label for="name" class="form-label fw-bold">Nom de la catégorie <span class="text-danger">*</span></label>
-                    <InputText id="name" @bind-Value="Category.Name" class="form-control form-control-lg" placeholder="Entrez le nom de la catégorie" />
-                    <ValidationMessage For="() => Category.Name" class="text-danger" />
-                    <div class="form-text">Le nom de la catégorie sera utilisé pour classer vos ressources.</div>
+@if (showDeleteModal)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmer la suppression</h5>
+                    <button type="button" class="btn-close" @onclick="CancelDelete"></button>
                 </div>
+                <div class="modal-body">
+                    <p>Êtes-vous sûr de vouloir supprimer la ressource <strong>@resource?.Name</strong> ?</p>
+                    <p class="text-danger"><i class="bi bi-exclamation-triangle"></i> Cette action est irréversible.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CancelDelete">Annuler</button>
+                    <button type="button" class="btn btn-danger" @onclick="DeleteResource">Supprimer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
 
-                <div class="d-flex justify-content-end mt-4">
-                    <a href="/categories" class="btn btn-outline-secondary me-2">Annuler</a>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-check-circle me-1"></i> Enregistrer les modifications
+@if (showShareModal)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Partager la ressource</h5>
+                    <button type="button" class="btn-close" @onclick="CancelShare"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Lien de partage</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" readonly value="@shareUrl" />
+                            <button class="btn btn-outline-secondary" @onclick="CopyShareLink">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Inviter par email</label>
+                        <input type="email" class="form-control" @bind="shareEmail" placeholder="Adresse email" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CancelShare">Fermer</button>
+                    <button type="button" class="btn btn-primary" @onclick="SendShareInvitation">
+                        <i class="bi bi-envelope"></i> Envoyer l'invitation
                     </button>
                 </div>
-            </EditForm>
-        }
+            </div>
+        </div>
     </div>
-</div>
+    <div class="modal-backdrop fade show"></div>
+}
 
 @code {
     [SupplyParameterFromQuery]
     private int Id { get; set; }
 
-    [SupplyParameterFromForm]
-    private Category? Category { get; set; }
+    private Resource? resource;
+    private Category? category;
+    private List<Comment>? comments;
+    private Progression? progression;
+    private bool showDeleteModal = false;
+    private bool showShareModal = false;
+    private string shareUrl = "";
+    private string shareEmail = "";
+    private string newCommentContent = "";
+
+    // États de la ressource pour l'utilisateur actuel
+    private bool isFavorite = false;
+    private bool isExploited = false;
 
     protected override async Task OnInitializedAsync()
     {
         using var context = DbFactory.CreateDbContext();
-        Category ??= await context.Categories.FirstOrDefaultAsync(m => m.Id == Id);
 
-        if (Category is null)
+        // Chargement de la ressource avec sa catégorie
+        resource = await context.Ressources
+            .Include(r => r.Category)
+            .FirstOrDefaultAsync(r => r.Id == Id);
+
+        if (resource is null)
         {
             NavigationManager.NavigateTo("notfound");
+            return;
         }
+
+        // Chargement des commentaires associés à cette ressource
+        // Note: Nécessite une relation entre Comment et Resource dans le modèle
+        // Cette partie devrait être adaptée selon votre modèle de données réel
+        comments = await context.Comments
+            .Where(c => c.Id == Id) // À adapter selon votre modèle
+            .ToListAsync();
+
+        // Chargement de la progression de l'utilisateur actuel pour cette ressource
+        // Note: Nécessite une relation entre Progression, User et Resource dans le modèle
+        // Cette partie devrait être adaptée selon votre modèle de données réel
+        progression = await context.Progressions
+            .FirstOrDefaultAsync(p => p.Id == Id); // À adapter selon votre modèle
+
+        // Vérification si la ressource est dans les favoris de l'utilisateur actuel
+        // Note: À adapter selon votre modèle de gestion des favoris
+        // isFavorite = await context.UserFavoriteResources...
+
+        // Vérification si la ressource est marquée comme exploitée par l'utilisateur actuel
+        // Note: À adapter selon votre modèle de gestion des ressources exploitées
+        // isExploited = await context.UserExploitedResources...
+
+        // Génération de l'URL de partage
+        shareUrl = $"{NavigationManager.BaseUri}resources/details?id={Id}";
     }
 
-    private async Task UpdateCategory()
+    private string GetStatusDisplayName(ResourceStatus status)
+    {
+        return status switch
+        {
+            ResourceStatus.Private => "Privé",
+            ResourceStatus.Public => "Public",
+            ResourceStatus.Draft => "Brouillon",
+            _ => status.ToString()
+        };
+    }
+
+    private string GetTypeDisplayName(ResourceType type)
+    {
+        return type switch
+        {
+            ResourceType.Activity => "Activité",
+            ResourceType.Game => "Jeu",
+            ResourceType.Document => "Document",
+            _ => type.ToString()
+        };
+    }
+
+    private string GetProgressionStatusDisplayName(ProgressionStatus status)
+    {
+        return status switch
+        {
+            ProgressionStatus.NotStarted => "Non commencé",
+            ProgressionStatus.InProgress => "En cours",
+            ProgressionStatus.Completed => "Terminé",
+            _ => status.ToString()
+        };
+    }
+
+    private string GetStatusBadgeClass(ResourceStatus status)
+    {
+        return status switch
+        {
+            ResourceStatus.Private => "bg-secondary",
+            ResourceStatus.Public => "bg-success",
+            ResourceStatus.Draft => "bg-warning",
+            _ => "bg-info"
+        };
+    }
+
+    private void ConfirmDelete()
+    {
+        showDeleteModal = true;
+    }
+
+    private async Task DeleteResource()
     {
         using var context = DbFactory.CreateDbContext();
-        context.Attach(Category!).State = EntityState.Modified;
+        context.Ressources.Remove(resource!);
+        await context.SaveChangesAsync();
 
-        try
+        NavigationManager.NavigateTo("/resources");
+        showDeleteModal = false;
+    }
+
+    private void CancelDelete()
+    {
+        showDeleteModal = false;
+    }
+
+    private async Task AddComment()
+    {
+        if (string.IsNullOrWhiteSpace(newCommentContent))
+            return;
+
+        using var context = DbFactory.CreateDbContext();
+
+        var comment = new Comment
+            {
+                Content = newCommentContent
+            // Ajouter ici les propriétés nécessaires pour lier le commentaire à la ressource et à l'utilisateur
+            };
+
+        context.Comments.Add(comment);
+        await context.SaveChangesAsync();
+
+        // Rafraîchir la liste des commentaires
+        comments = await context.Comments
+            .Where(c => c.Id == Id) // À adapter selon votre modèle
+            .ToListAsync();
+
+        newCommentContent = "";
+    }
+
+    private void ReplyToComment(Comment comment)
+    {
+        // Logique pour répondre à un commentaire
+        newCommentContent = $"En réponse à: {comment.Content}\n";
+    }
+
+    private async Task ToggleFavorite()
+    {
+        isFavorite = !isFavorite;
+
+        // Logique pour ajouter/retirer des favoris
+        // À implémenter selon votre modèle de données
+    }
+
+    private async Task ToggleExploited()
+    {
+        isExploited = !isExploited;
+
+        // Logique pour marquer comme exploitée/non exploitée
+        // À implémenter selon votre modèle de données
+    }
+
+    private void ShareResource()
+    {
+        showShareModal = true;
+    }
+
+    private void CancelShare()
+    {
+        showShareModal = false;
+    }
+
+    private void CopyShareLink()
+    {
+        // Dans un contexte réel, cela nécessiterait du JavaScript pour copier dans le presse-papiers
+        // Pour l'instant, c'est juste un placeholder
+    }
+
+    private async Task SendShareInvitation()
+    {
+        // Logique pour envoyer une invitation par email
+        // À implémenter selon vos besoins
+
+        showShareModal = false;
+    }
+
+    private async Task PublishResource()
+    {
+        if (resource != null && resource.Status == ResourceStatus.Draft)
         {
+            using var context = DbFactory.CreateDbContext();
+
+            resource.Status = ResourceStatus.Public;
+            context.Attach(resource).State = EntityState.Modified;
+
             await context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!CategoryExists(Category!.Id))
-            {
-                NavigationManager.NavigateTo("notfound");
-            }
-            else
-            {
-                throw;
-            }
-        }
 
-        NavigationManager.NavigateTo("/categories");
+            // Rafraîchir l'affichage
+            await OnInitializedAsync();
+        }
     }
 
-    private bool CategoryExists(int id)
+    private async Task StartProgression()
     {
         using var context = DbFactory.CreateDbContext();
-        return context.Categories.Any(e => e.Id == id);
+
+        progression = new Progression
+            {
+                Percentage = 0,
+                Status = ProgressionStatus.InProgress,
+                LastInteractionDate = DateTime.Now
+            // Ajouter ici les propriétés nécessaires pour lier la progression à la ressource et à l'utilisateur
+            };
+
+        context.Progressions.Add(progression);
+        await context.SaveChangesAsync();
+    }
+
+    private async Task UpdateProgression()
+    {
+        // Ouvrir un dialogue pour mettre à jour la progression
+        // Cette méthode pourrait être étendue pour afficher un modal permettant de modifier la progression
     }
 }
