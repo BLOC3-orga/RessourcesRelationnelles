@@ -1,35 +1,128 @@
 ﻿@page "/categories"
 @using Microsoft.EntityFrameworkCore
-@using Microsoft.AspNetCore.Components.QuickGrid
 @using R2.Data.Entities
 @using R2.Data.Context
 @implements IAsyncDisposable
 @inject IDbContextFactory<R2.Data.Context.R2DbContext> DbFactory
+@inject NavigationManager NavigationManager
 
-<PageTitle>Index</PageTitle>
+<PageTitle>Catégories</PageTitle>
 
-<h1>Index</h1>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Catégories</h1>
+    <div>
+        <a href="categories/create" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Créer une nouvelle catégorie
+        </a>
+    </div>
+</div>
 
-<p>
-    <a href="categories/create">Create New</a>
-</p>
+@* LISTE DES CATÉGORIES *@
+<div class="card shadow-sm">
+    <div class="list-group list-group-flush">
+        @foreach (var category in allCategories)
+        {
+            <div class="list-group-item list-group-item-action p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-1">@category.Name</h5>
+                        <p class="small text-muted mb-0">
+                            <i class="bi bi-collection"></i>
+                            @* Ceci est un placeholder, vous devrez implémenter la logique pour compter les ressources *@
+                            @(resourcesCount.GetValueOrDefault(category.Id, 0)) ressource(s) associée(s)
+                        </p>
+                    </div>
+                    <div>
+                        <div class="btn-group btn-group-sm">
+                            <a href="@($"categories/edit?id={category.Id}")" class="btn btn-outline-secondary">
+                                <i class="bi bi-pencil"></i> Modifier
+                            </a>
+                            <button class="btn btn-outline-danger" @onclick="() => ConfirmDelete(category)">
+                                <i class="bi bi-trash"></i> Supprimer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
 
-<QuickGrid Class="table" Items="context.Categories">
-    <PropertyColumn Property="category => category.Name" />
 
-    <TemplateColumn Context="category">
-        <a href="@($"categories/edit?id={category.Id}")">Edit</a> |
-        <a href="@($"categories/details?id={category.Id}")">Details</a> |
-        <a href="@($"categories/delete?id={category.Id}")">Delete</a>
-    </TemplateColumn>
-</QuickGrid>
+@if (showDeleteModal)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmer la suppression</h5>
+                    <button type="button" class="btn-close" @onclick="CancelDelete"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Êtes-vous sûr de vouloir supprimer la catégorie <strong>@categoryToDelete?.Name</strong> ?</p>
+                    <p class="text-danger">
+                        <i class="bi bi-exclamation-triangle"></i> Cette action est irréversible et peut affecter les ressources associées à cette catégorie.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CancelDelete">Annuler</button>
+                    <button type="button" class="btn btn-danger" @onclick="DeleteCategory">Supprimer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
 
 @code {
     private R2DbContext context = default!;
+    private List<Category> allCategories = new List<Category>();
+    private Dictionary<int, int> resourcesCount = new Dictionary<int, int>();
+    private string sortBy = "name";
+    private bool showDeleteModal = false;
+    private Category categoryToDelete;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         context = DbFactory.CreateDbContext();
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        // Charger les catégories
+        allCategories = await context.Categories.ToListAsync();
+
+        // Charger le nombre de ressources pour chaque catégorie
+        var resources = await context.Ressources.ToListAsync();
+        resourcesCount = resources
+            .GroupBy(r => r.CategoryId)
+            .ToDictionary(g => g.Key, g => g.Count());
+    }
+
+    private void ConfirmDelete(Category category)
+    {
+        categoryToDelete = category;
+        showDeleteModal = true;
+    }
+
+    private async Task DeleteCategory()
+    {
+        if (categoryToDelete != null)
+        {
+            context.Categories.Remove(categoryToDelete);
+            await context.SaveChangesAsync();
+            await LoadData();
+        }
+
+        showDeleteModal = false;
+        categoryToDelete = null;
+    }
+
+    private void CancelDelete()
+    {
+        showDeleteModal = false;
+        categoryToDelete = null;
     }
 
     public async ValueTask DisposeAsync() => await context.DisposeAsync();

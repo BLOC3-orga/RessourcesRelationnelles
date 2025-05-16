@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using R2.Data.Context;
 
@@ -11,9 +12,11 @@ using R2.Data.Context;
 namespace R2.Data.Migrations
 {
     [DbContext(typeof(R2DbContext))]
-    partial class R2DbContextModelSnapshot : ModelSnapshot
+    [Migration("20250516072132_New")]
+    partial class New
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

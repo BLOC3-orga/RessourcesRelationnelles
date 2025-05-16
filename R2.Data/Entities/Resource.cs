@@ -9,7 +9,7 @@ public class Resource
     public int Id { get; set; }
     public string Name { get; set; } = null!;
     public string Description { get; set; } = null!;
-    public DateTime CreationDate { get; set; }
+    public DateTime CreationDate { get; set; } = DateTime.Now;
     public Enums.ResourceType Type { get; set; }
     public ResourceStatus Status { get; set; } = ResourceStatus.Private;
 

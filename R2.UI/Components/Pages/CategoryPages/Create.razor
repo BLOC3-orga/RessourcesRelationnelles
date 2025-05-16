@@ -4,36 +4,41 @@
 @inject IDbContextFactory<R2.Data.Context.R2DbContext> DbFactory
 @inject NavigationManager NavigationManager
 
-<PageTitle>Create</PageTitle>
+<PageTitle>Créer une catégorie</PageTitle>
 
-<h1>Create</h1>
-
-<h2>Category</h2>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <EditForm method="post" Model="Category" OnValidSubmit="AddCategory" FormName="create" Enhance>
-            <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" role="alert"/>
-            <div class="mb-3">
-                <label for="name" class="form-label">Name:</label> 
-                <InputText id="name" @bind-Value="Category.Name" class="form-control" /> 
-                <ValidationMessage For="() => Category.Name" class="text-danger" /> 
-            </div>        
-            <button type="submit" class="btn btn-primary">Create</button>
-        </EditForm>
-    </div>
+<div class="d-flex align-items-center mb-4">
+    <a href="/categories" class="btn btn-outline-secondary me-3">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <h1 class="mb-0">Nouvelle catégorie</h1>
 </div>
 
-<div>
-    <a href="/categories">Back to List</a>
+<div class="card shadow-sm">
+    <div class="card-body">
+        <EditForm method="post" Model="Category" OnValidSubmit="AddCategory" FormName="create" Enhance>
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" role="alert" />
+
+            <div class="mb-4">
+                <label for="name" class="form-label fw-bold">Nom de la catégorie <span class="text-danger">*</span></label>
+                <InputText id="name" @bind-Value="Category.Name" class="form-control form-control-lg" placeholder="Entrez le nom de la catégorie" required />
+                <ValidationMessage For="() => Category.Name" class="text-danger" />
+            </div>
+
+            <div class="d-flex justify-content-end mt-4">
+                <a href="/categories" class="btn btn-outline-secondary me-2">Annuler</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i> Créer la catégorie
+                </button>
+            </div>
+        </EditForm>
+    </div>
 </div>
 
 @code {
     [SupplyParameterFromForm]
     private Category Category { get; set; } = new();
 
-    // To protect from overposting attacks, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
     private async Task AddCategory()
     {
         using var context = DbFactory.CreateDbContext();
@@ -41,4 +46,4 @@
         await context.SaveChangesAsync();
         NavigationManager.NavigateTo("/categories");
     }
-}
+}   

@@ -1,7 +1,7 @@
 ﻿@page "/"
 @page "/resources"
+@using Microsoft.AspNetCore.Components.Web
 @using Microsoft.EntityFrameworkCore
-@using Microsoft.AspNetCore.Components.QuickGrid
 @using R2.Data.Entities
 @using R2.Data.Context
 @using R2.Data.Enums
@@ -20,6 +20,7 @@
     </div>
 </div>
 
+@* FILTRES *@
 <div class="card mb-4">
     <div class="card-header bg-light">
         <h5 class="mb-0">Filtres</h5>
@@ -30,7 +31,7 @@
                 <label for="statusFilter" class="form-label">Statut</label>
                 <select id="statusFilter" class="form-select" @bind="statusFilter">
                     <option value="-1">Tous</option>
-                    @foreach(var status in Enum.GetValues(typeof(ResourceStatus)))
+                    @foreach (var status in Enum.GetValues(typeof(ResourceStatus)))
                     {
                         <option value="@((int)status)">@GetStatusDisplayName((ResourceStatus)status)</option>
                     }
@@ -40,7 +41,7 @@
                 <label for="typeFilter" class="form-label">Type</label>
                 <select id="typeFilter" class="form-select" @bind="typeFilter">
                     <option value="-1">Tous</option>
-                    @foreach(var type in Enum.GetValues(typeof(ResourceType)))
+                    @foreach (var type in Enum.GetValues(typeof(ResourceType)))
                     {
                         <option value="@((int)type)">@GetTypeDisplayName((ResourceType)type)</option>
                     }
@@ -71,6 +72,7 @@
     </div>
 </div>
 
+@*RESSOURCES*@
 @if (filteredResources == null)
 {
     <div class="d-flex justify-content-center">
@@ -183,9 +185,9 @@ else
         allResources = await context.Ressources
             .Include(r => r.Category)
             .ToListAsync();
-            
+
         categories = await context.Categories.ToListAsync();
-        
+
         ApplyFilters();
     }
 
@@ -237,7 +239,7 @@ else
             await context.SaveChangesAsync();
             await LoadData();
         }
-        
+
         showDeleteModal = false;
         resourceToDelete = null;
     }
@@ -248,19 +250,21 @@ else
         resourceToDelete = null;
     }
 
-    // Ces méthodes seraient à implémenter selon vos besoins
+    // TODO
     private async Task AddToFavorites(Resource resource)
     {
         // Logique pour ajouter aux favoris
         // Nécessite l'utilisateur courant
     }
 
+    // TODO
     private async Task MarkAsExploited(Resource resource)
     {
         // Logique pour marquer comme exploitée
         // Nécessite l'utilisateur courant
     }
 
+    // TODO
     private void ShareResource(Resource resource)
     {
         // Logique pour partager
@@ -274,7 +278,7 @@ else
             ResourceStatus.Private => "Privé",
             ResourceStatus.Public => "Public",
             ResourceStatus.Draft => "Brouillon",
-            _ => status.ToString()
+            _ => ""
         };
     }
 
@@ -285,7 +289,7 @@ else
             ResourceType.Activity => "Activité",
             ResourceType.Game => "Jeu",
             ResourceType.Document => "Document",
-            _ => type.ToString()
+            _ => ""
         };
     }
 
