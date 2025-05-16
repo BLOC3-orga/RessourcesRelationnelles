@@ -55,17 +55,17 @@ else
                     <InputCheckbox id="isaccountactivated" @bind-Value="User.IsAccountActivated" class="form-check-input" />
                     <ValidationMessage For="() => User.IsAccountActivated" class="text-danger" />
                 </div>
-
-                <div class="mb-3">
+                
+               <!-- <div class="mb-3">
                     <label for="role" class="form-label">Rôle:</label>
                     <InputSelect id="role" @bind-Value="SelectedRole" class="form-select">
                         @foreach (var role in AvailableRoles)
                         {
-                            <option value="@role.Name">@role.Name</option>
+                           // <option value="@role.Name">@role.Name</option>
                         }
                     </InputSelect>
-                </div>
-
+                 </div>-->
+                
                 <button type="submit" class="btn btn-primary">Save</button>
             </EditForm>
         </div>
@@ -82,10 +82,11 @@ else
 
     [SupplyParameterFromForm]
     private User? User { get; set; }
-
-    // Nouvelles propriétés pour gérer les rôles
+    
+    // Propriétés pour gérer les rôles
     private List<IdentityRole<int>> AvailableRoles = new();
     private string SelectedRole = string.Empty;
+    private string OriginalRole = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -97,19 +98,21 @@ else
             NavigationManager.NavigateTo("notfound");
             return;
         }
-
+        
         // Charger les rôles disponibles
-        AvailableRoles = await RoleManager.Roles.ToListAsync();
-
+     //   AvailableRoles = await RoleManager.Roles.ToListAsync();
+        
         // Déterminer le rôle actuel de l'utilisateur
-        var userRoles = await UserManager.GetRolesAsync(User);
+     /*   var userRoles = await UserManager.GetRolesAsync(User);
         SelectedRole = userRoles.FirstOrDefault() ?? AvailableRoles.FirstOrDefault()?.Name ?? string.Empty;
+        OriginalRole = SelectedRole; // Stocker le rôle original pour le comparer plus tard
 
-        Console.WriteLine($"Utilisateur chargé: {User.Name} {User.LastName}, rôle actuel: {SelectedRole}");
+        Console.WriteLine($"Utilisateur chargé: {User.Name} {User.LastName}, rôle actuel: {SelectedRole}");*/
     }
 
     private async Task UpdateUser()
     {
+        // 1. Mettre à jour les informations de base de l'utilisateur
         using var context = DbFactory.CreateDbContext();
 
         var userInDb = await context.Users.FindAsync(User!.Id);
@@ -123,6 +126,7 @@ else
         Console.WriteLine($"Mise à jour de l'utilisateur {userInDb.Id}:");
         Console.WriteLine($"Ancien: {userInDb.Name}, {userInDb.LastName}, {userInDb.Pseudo}, {userInDb.City}, {userInDb.Address}");
         Console.WriteLine($"Nouveau: {User.Name}, {User.LastName}, {User.Pseudo}, {User.City}, {User.Address}");
+    //    Console.WriteLine($"Rôle original: {OriginalRole}, Nouveau rôle: {SelectedRole}");
 
         userInDb.Name = User.Name;
         userInDb.LastName = User.LastName;
@@ -131,11 +135,40 @@ else
         userInDb.Address = User.Address;
         userInDb.IsAccountActivated = User.IsAccountActivated;
 
-
         try
         {
             await context.SaveChangesAsync();
-            Console.WriteLine("Modifications enregistrées avec succès");
+            Console.WriteLine("Modifications des données de base enregistrées avec succès");
+            
+           /* if (SelectedRole != OriginalRole)
+            {
+                Console.WriteLine($"Mise à jour du rôle: {OriginalRole} -> {SelectedRole}");
+
+                var userForRole = await UserManager.FindByIdAsync(User.Id.ToString());
+
+                if (userForRole != null)
+                {
+                    if (!string.IsNullOrEmpty(OriginalRole))
+                    {
+                        await UserManager.RemoveFromRoleAsync(userForRole, OriginalRole);
+                        }
+
+                    if (!string.IsNullOrEmpty(SelectedRole))
+                    {
+                        await UserManager.AddToRoleAsync(userForRole, SelectedRole);
+                        }
+
+                    Console.WriteLine("Modification du rôle enregistrée avec succès");
+                    }
+                else
+                {
+                    Console.WriteLine("Utilisateur non trouvé pour la mise à jour du rôle");
+                    }
+                }
+                 else
+            {
+                Console.WriteLine("Le rôle n'a pas été modifié, aucune mise à jour nécessaire");
+                }*/
         }
         catch (DbUpdateConcurrencyException ex)
         {
