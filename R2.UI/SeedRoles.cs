@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 
-namespace R2Model.DataSeed
+namespace R2.Data.DataSeed
 {
     public static class SeedRoles
     {
