@@ -161,21 +161,24 @@ else
                                 }
 
                                 <div class="dropdown">
-                                    <button class="btn btn-outline-secondary dropdown-toggle w-100" type="button" id="moreActionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <i class="bi bi-three-dots"></i> Plus d'actions
-                                    </button>
-                                    <ul class="dropdown-menu w-100" aria-labelledby="moreActionsDropdown">
-                                        <li>
-                                            <a class="dropdown-item" href="@($"resources/edit?id={resource.Id}")">
-                                                <i class="bi bi-pencil"></i> Modifier
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <button class="dropdown-item text-danger" @onclick="ConfirmDelete">
-                                                <i class="bi bi-trash"></i> Supprimer
-                                            </button>
-                                        </li>
-                                    </ul>
+                                    <a href="@($"resources/delete/{resource.Id}")" class="btn btn-outline-danger">
+                                        <i class="bi bi-trash"></i> Supprimer
+                                    </a>
+                                    @* <button class="btn btn-outline-secondary dropdown-toggle w-100" type="button" id="moreActionsDropdown" data-bs-toggle="dropdown" aria-expanded="false"> *@
+                                    @*     <i class="bi bi-three-dots"></i> Plus d'actions *@
+                                    @* </button> *@
+                                    @* <ul class="dropdown-menu w-100" aria-labelledby="moreActionsDropdown"> *@
+                                    @*     <li> *@
+                                    @*         <a class="dropdown-item" href="@($"resources/edit?id={resource.Id}")"> *@
+                                    @*             <i class="bi bi-pencil"></i> Modifier *@
+                                    @*         </a> *@
+                                    @*     </li> *@
+                                    @*     <li> *@
+                                    @*         <button class="dropdown-item text-danger" @onclick="ConfirmDelete"> *@
+                                    @*             <i class="bi bi-trash"></i> Supprimer *@
+                                    @*         </button> *@
+                                    @*     </li> *@
+                                    @* </ul> *@
                                 </div>
                             </div>
                         </div>
