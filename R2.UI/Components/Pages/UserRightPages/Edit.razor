@@ -4,37 +4,49 @@
 @inject IDbContextFactory<R2.Data.Context.R2DbContext> DbFactory
 @inject NavigationManager NavigationManager
 
-<PageTitle>Edit</PageTitle>
+<PageTitle>Modifier un droit utilisateur</PageTitle>
 
-<h1>Edit</h1>
+<div class="d-flex align-items-center mb-4">
+    <a href="/userrights/index" class="btn btn-outline-secondary me-3">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <h1 class="mb-0">Modifier le droit utilisateur</h1>
+</div>
 
-<h2>UserRight</h2>
-<hr />
-@if (UserRight is null)
-{
-    <p><em>Loading...</em></p>
-}
-else
-{
-    <div class="row">
-        <div class="col-md-4">
+<div class="card shadow-sm">
+    <div class="card-body">
+        @if (UserRight is null)
+        {
+            <div class="d-flex justify-content-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Chargement...</span>
+                </div>
+            </div>
+        }
+        else
+        {
             <EditForm method="post" Model="UserRight" OnValidSubmit="UpdateUserRight" FormName="edit" Enhance>
                 <DataAnnotationsValidator />
-                <ValidationSummary role="alert"/>
-                <input type="hidden" name="UserRight.Id" value="@UserRight.Id" />
-                <div class="mb-3">
-                    <label for="label" class="form-label">Label:</label>
-                    <InputText id="label" @bind-Value="UserRight.Label" class="form-control" />
-                    <ValidationMessage For="() => UserRight.Label" class="text-danger" />
-                </div>
-                <button type="submit" class="btn btn-primary">Save</button>
-            </EditForm>
-        </div>
-    </div>
-}
+                <ValidationSummary class="alert alert-danger" role="alert" />
 
-<div>
-    <a href="/userrights">Back to List</a>
+                <input type="hidden" name="UserRight.Id" value="@UserRight.Id" />
+
+                <div class="mb-4">
+                    <label for="label" class="form-label fw-bold">Libellé du droit <span class="text-danger">*</span></label>
+                    <InputText id="label" @bind-Value="UserRight.Label" class="form-control form-control-lg" placeholder="Entrez le libellé du droit" />
+                    <ValidationMessage For="() => UserRight.Label" class="text-danger" />
+                    <div class="form-text">Le libellé du droit sera utilisé pour définir les permissions des utilisateurs.</div>
+                </div>
+
+                <div class="d-flex justify-content-end mt-4">
+                    <a href="/userrights/index" class="btn btn-outline-secondary me-2">Annuler</a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-1"></i> Enregistrer les modifications
+                    </button>
+                </div>
+            </EditForm>
+        }
+    </div>
 </div>
 
 @code {
@@ -55,8 +67,6 @@ else
         }
     }
 
-    // To protect from overposting attacks, enable the specific properties you want to bind to.
-    // For more information, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
     private async Task UpdateUserRight()
     {
         using var context = DbFactory.CreateDbContext();
@@ -78,7 +88,7 @@ else
             }
         }
 
-        NavigationManager.NavigateTo("/userrights");
+        NavigationManager.NavigateTo("/userrights/index");
     }
 
     private bool UserRightExists(int id)

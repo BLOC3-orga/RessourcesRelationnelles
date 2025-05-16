@@ -7,73 +7,98 @@
 @inject UserManager<User> UserManager
 @inject RoleManager<IdentityRole<int>> RoleManager
 
-<PageTitle>Edit</PageTitle>
+<PageTitle>Modifier un utilisateur</PageTitle>
 
-<h1>Edit</h1>
+<div class="d-flex align-items-center mb-4">
+    <a href="/users" class="btn btn-outline-secondary me-3">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <h1 class="mb-0">Modifier l'utilisateur</h1>
+</div>
 
-<h2>User</h2>
-<hr />
-@if (User is null)
-{
-    <p><em>Loading...</em></p>
-}
-else
-{
-    <div class="row">
-        <div class="col-md-4">
+<div class="card shadow-sm">
+    <div class="card-body">
+        @if (User is null)
+        {
+            <div class="d-flex justify-content-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Chargement...</span>
+                </div>
+            </div>
+        }
+        else
+        {
             <EditForm method="post" Model="User" OnValidSubmit="UpdateUser" FormName="edit" Enhance>
                 <DataAnnotationsValidator />
-                <ValidationSummary role="alert" />
+                <ValidationSummary class="alert alert-danger" role="alert" />
+
                 <input type="hidden" name="User.Id" value="@User.Id" />
-                <div class="mb-3">
-                    <label for="name" class="form-label">Name:</label>
-                    <InputText id="name" @bind-Value="User.Name" class="form-control" />
-                    <ValidationMessage For="() => User.Name" class="text-danger" />
+
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <label for="name" class="form-label fw-bold">Prénom <span class="text-danger">*</span></label>
+                        <InputText id="name" @bind-Value="User.Name" class="form-control" placeholder="Entrez le prénom" />
+                        <ValidationMessage For="() => User.Name" class="text-danger" />
+                    </div>
+
+                    <div class="col-md-6 mb-4">
+                        <label for="lastname" class="form-label fw-bold">Nom <span class="text-danger">*</span></label>
+                        <InputText id="lastname" @bind-Value="User.LastName" class="form-control" placeholder="Entrez le nom" />
+                        <ValidationMessage For="() => User.LastName" class="text-danger" />
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <label for="lastname" class="form-label">LastName:</label>
-                    <InputText id="lastname" @bind-Value="User.LastName" class="form-control" />
-                    <ValidationMessage For="() => User.LastName" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="pseudo" class="form-label">Pseudo:</label>
-                    <InputText id="pseudo" @bind-Value="User.Pseudo" class="form-control" />
+
+                <div class="mb-4">
+                    <label for="pseudo" class="form-label fw-bold">Pseudo <span class="text-danger">*</span></label>
+                    <InputText id="pseudo" @bind-Value="User.Pseudo" class="form-control" placeholder="Entrez le pseudo" />
                     <ValidationMessage For="() => User.Pseudo" class="text-danger" />
+                    <div class="form-text">Le pseudo sera utilisé pour l'identification de l'utilisateur sur la plateforme.</div>
                 </div>
-                <div class="mb-3">
-                    <label for="city" class="form-label">City:</label>
-                    <InputText id="city" @bind-Value="User.City" class="form-control" />
-                    <ValidationMessage For="() => User.City" class="text-danger" />
+
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <label for="city" class="form-label fw-bold">Ville</label>
+                        <InputText id="city" @bind-Value="User.City" class="form-control" placeholder="Entrez la ville" />
+                        <ValidationMessage For="() => User.City" class="text-danger" />
+                    </div>
+
+                    <div class="col-md-6 mb-4">
+                        <label for="address" class="form-label fw-bold">Adresse</label>
+                        <InputText id="address" @bind-Value="User.Address" class="form-control" placeholder="Entrez l'adresse" />
+                        <ValidationMessage For="() => User.Address" class="text-danger" />
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <label for="address" class="form-label">Address:</label>
-                    <InputText id="address" @bind-Value="User.Address" class="form-control" />
-                    <ValidationMessage For="() => User.Address" class="text-danger" />
+
+                <div class="mb-4">
+                    <div class="form-check form-switch">
+                        <InputCheckbox id="isaccountactivated" @bind-Value="User.IsAccountActivated" class="form-check-input" />
+                        <label class="form-check-label fw-bold" for="isaccountactivated">Compte activé</label>
+                    </div>
+                    <div class="form-text">Activez ou désactivez le compte de l'utilisateur.</div>
                 </div>
-                <div class="mb-3">
-                    <label for="isaccountactivated" class="form-label">IsAccountActivated:</label>
-                    <InputCheckbox id="isaccountactivated" @bind-Value="User.IsAccountActivated" class="form-check-input" />
-                    <ValidationMessage For="() => User.IsAccountActivated" class="text-danger" />
-                </div>
-                
-               <!-- <div class="mb-3">
-                    <label for="role" class="form-label">Rôle:</label>
+
+                @* Commenté pour le moment, mais stylisé pour cohérence
+                <div class="mb-4">
+                    <label for="role" class="form-label fw-bold">Rôle <span class="text-danger">*</span></label>
                     <InputSelect id="role" @bind-Value="SelectedRole" class="form-select">
                         @foreach (var role in AvailableRoles)
                         {
-                           // <option value="@role.Name">@role.Name</option>
+                            <option value="@role.Name">@role.Name</option>
                         }
                     </InputSelect>
-                 </div>-->
-                
-                <button type="submit" class="btn btn-primary">Save</button>
-            </EditForm>
-        </div>
-    </div>
-}
+                    <div class="form-text">Le rôle définit les permissions de l'utilisateur sur la plateforme.</div>
+                </div>
+                *@
 
-<div>
-    <a href="/users">Back to List</a>
+                <div class="d-flex justify-content-end mt-4">
+                    <a href="/users" class="btn btn-outline-secondary me-2">Annuler</a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-1"></i> Enregistrer les modifications
+                    </button>
+                </div>
+            </EditForm>
+        }
+    </div>
 </div>
 
 @code {
@@ -82,8 +107,8 @@ else
 
     [SupplyParameterFromForm]
     private User? User { get; set; }
-    
-    // Propriétés pour gérer les rôles
+
+    // Propriétés pour gérer les rôles (commentées pour le moment)
     private List<IdentityRole<int>> AvailableRoles = new();
     private string SelectedRole = string.Empty;
     private string OriginalRole = string.Empty;
@@ -98,16 +123,16 @@ else
             NavigationManager.NavigateTo("notfound");
             return;
         }
-        
-        // Charger les rôles disponibles
-     //   AvailableRoles = await RoleManager.Roles.ToListAsync();
-        
-        // Déterminer le rôle actuel de l'utilisateur
-     /*   var userRoles = await UserManager.GetRolesAsync(User);
+
+        // Charger les rôles disponibles (commenté pour le moment)
+        // AvailableRoles = await RoleManager.Roles.ToListAsync();
+
+        // Déterminer le rôle actuel de l'utilisateur (commenté pour le moment)
+        /*
+        var userRoles = await UserManager.GetRolesAsync(User);
         SelectedRole = userRoles.FirstOrDefault() ?? AvailableRoles.FirstOrDefault()?.Name ?? string.Empty;
         OriginalRole = SelectedRole; // Stocker le rôle original pour le comparer plus tard
-
-        Console.WriteLine($"Utilisateur chargé: {User.Name} {User.LastName}, rôle actuel: {SelectedRole}");*/
+        */
     }
 
     private async Task UpdateUser()
@@ -123,11 +148,6 @@ else
             return;
         }
 
-        Console.WriteLine($"Mise à jour de l'utilisateur {userInDb.Id}:");
-        Console.WriteLine($"Ancien: {userInDb.Name}, {userInDb.LastName}, {userInDb.Pseudo}, {userInDb.City}, {userInDb.Address}");
-        Console.WriteLine($"Nouveau: {User.Name}, {User.LastName}, {User.Pseudo}, {User.City}, {User.Address}");
-    //    Console.WriteLine($"Rôle original: {OriginalRole}, Nouveau rôle: {SelectedRole}");
-
         userInDb.Name = User.Name;
         userInDb.LastName = User.LastName;
         userInDb.Pseudo = User.Pseudo;
@@ -138,12 +158,11 @@ else
         try
         {
             await context.SaveChangesAsync();
-            Console.WriteLine("Modifications des données de base enregistrées avec succès");
-            
-           /* if (SelectedRole != OriginalRole)
-            {
-                Console.WriteLine($"Mise à jour du rôle: {OriginalRole} -> {SelectedRole}");
 
+            // Code pour la gestion des rôles (commenté pour le moment)
+            /*
+            if (SelectedRole != OriginalRole)
+            {
                 var userForRole = await UserManager.FindByIdAsync(User.Id.ToString());
 
                 if (userForRole != null)
@@ -157,36 +176,20 @@ else
                     {
                         await UserManager.AddToRoleAsync(userForRole, SelectedRole);
                         }
-
-                    Console.WriteLine("Modification du rôle enregistrée avec succès");
-                    }
-                else
-                {
-                    Console.WriteLine("Utilisateur non trouvé pour la mise à jour du rôle");
                     }
                 }
-                 else
-            {
-                Console.WriteLine("Le rôle n'a pas été modifié, aucune mise à jour nécessaire");
-                }*/
+            */
         }
-        catch (DbUpdateConcurrencyException ex)
+        catch (DbUpdateConcurrencyException)
         {
             if (!UserExists(User.Id))
             {
-                Console.WriteLine($"Utilisateur {User.Id} introuvable");
                 NavigationManager.NavigateTo("notfound");
             }
             else
             {
-                Console.WriteLine($"Erreur de concurrence: {ex.Message}");
                 throw;
             }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Erreur lors de la mise à jour: {ex.Message}");
-            throw;
         }
 
         NavigationManager.NavigateTo("/users");

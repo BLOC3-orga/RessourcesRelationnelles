@@ -1,6 +1,5 @@
 ﻿@page "/users"
 @using Microsoft.EntityFrameworkCore
-@using Microsoft.AspNetCore.Components.QuickGrid
 @using R2.Data.Entities
 @using R2.Data.Context
 @using Microsoft.AspNetCore.Identity
@@ -8,71 +7,115 @@
 @inject IDbContextFactory<R2.Data.Context.R2DbContext> DbFactory
 @inject UserManager<User> UserManager
 @inject RoleManager<IdentityRole<int>> RoleManager
-<PageTitle>Liste des utilisateurs</PageTitle>
-<h1>Liste des utilisateurs</h1>
-<p>
-    <a href="users/create" class="btn btn-primary">Create New</a>
-</p>
+@inject NavigationManager NavigationManager
+
+<PageTitle>Utilisateurs</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Utilisateurs</h1>
+    <div>
+        <a href="users/create" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Créer un nouvel utilisateur
+        </a>
+    </div>
+</div>
+
 @if (isLoading)
 {
-    <div class="spinner-border" role="status">
-        <span class="visually-hidden">Loading...</span>
+    <div class="d-flex justify-content-center my-5">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Chargement...</span>
+        </div>
     </div>
 }
 else
 {
-    <QuickGrid Class="table table-striped table-hover" Items="@usersWithRolesQueryable">
-        <PropertyColumn Property="user => user.Id" Title="ID" />
-        <PropertyColumn Property="user => user.Name" Title="Prénom" />
-        <PropertyColumn Property="user => user.LastName" Title="Nom" />
-        <PropertyColumn Property="user => user.Pseudo" Title="Pseudo" />
-        <PropertyColumn Property="user => user.Email" Title="Email" />
-        <PropertyColumn Property="user => user.City" Title="Ville" />
-        <TemplateColumn Title="Rôle">
-            <span class="badge rounded-pill bg-info">@context.Role</span>
-        </TemplateColumn>
-        <TemplateColumn Title="Compte activé">
-            @if (context.User.IsAccountActivated)
+    @* LISTE DES UTILISATEURS *@
+    <div class="card shadow-sm">
+        <div class="list-group list-group-flush">
+            @foreach (var userWithRole in usersWithRoles)
             {
-                <span class="badge rounded-pill bg-success">Activé</span>
+                <div class="list-group-item list-group-item-action p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-1">@userWithRole.User.Name @userWithRole.User.LastName</h5>
+                            <p class="small text-muted mb-0">
+                                <i class="bi bi-envelope"></i> @userWithRole.User.Email
+                                <span class="ms-3"><i class="bi bi-person-badge"></i> @userWithRole.Role</span>
+                                @if (!string.IsNullOrEmpty(userWithRole.User.City))
+                                {
+                                    <span class="ms-3"><i class="bi bi-geo-alt"></i> @userWithRole.User.City</span>
+                                }
+                                <span class="ms-3">
+                                    @if (userWithRole.User.IsAccountActivated)
+                                    {
+                                        <span class="badge rounded-pill bg-success">Activé</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge rounded-pill bg-danger">Désactivé</span>
+                                    }
+                                </span>
+                            </p>
+                        </div>
+                        <div>
+                            <div class="btn-group btn-group-sm">
+                                <a href="@($"users/details?id={userWithRole.User.Id}")" class="btn btn-outline-info">
+                                    <i class="bi bi-info-circle"></i> Détails
+                                </a>
+                                <a href="@($"users/edit?id={userWithRole.User.Id}")" class="btn btn-outline-secondary">
+                                    <i class="bi bi-pencil"></i> Modifier
+                                </a>
+                                <button class="btn btn-outline-danger" @onclick="() => ConfirmDelete(userWithRole.User)">
+                                    <i class="bi bi-trash"></i> Supprimer
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             }
-            else
-            {
-                <span class="badge rounded-pill bg-danger">Désactivé</span>
-            }
-        </TemplateColumn>
-        <TemplateColumn Title="Actions">
-            <div class="btn-group">
-                <a href="@($"users/edit?id={context.User.Id}")" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-pencil"></i> Edit
-                </a>
-                <a href="@($"users/details?id={context.User.Id}")" class="btn btn-sm btn-outline-info">
-                    <i class="bi bi-info-circle"></i> Details
-                </a>
-                <a href="@($"users/delete?id={context.User.Id}")" class="btn btn-sm btn-outline-danger">
-                    <i class="bi bi-trash"></i> Delete
-                </a>
-            </div>
-        </TemplateColumn>
-    </QuickGrid>
+        </div>
+    </div>
 }
+
+@if (showDeleteModal)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmer la suppression</h5>
+                    <button type="button" class="btn-close" @onclick="CancelDelete"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Êtes-vous sûr de vouloir supprimer l'utilisateur <strong>@userToDelete?.Name @userToDelete?.LastName</strong> ?</p>
+                    <p class="text-danger">
+                        <i class="bi bi-exclamation-triangle"></i> Cette action est irréversible et supprimera définitivement cet utilisateur du système.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CancelDelete">Annuler</button>
+                    <button type="button" class="btn btn-danger" @onclick="DeleteUser">Supprimer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
 @code {
     private R2DbContext context = default!;
     private bool isLoading = true;
     private List<UserWithRole> usersWithRoles = new List<UserWithRole>();
     private IQueryable<UserWithRole> usersWithRolesQueryable => usersWithRoles.AsQueryable();
+    private bool showDeleteModal = false;
+    private User userToDelete;
 
     // Classe pour stocker les informations utilisateur avec son rôle
     private class UserWithRole
     {
         public User User { get; set; } = default!;
         public string Role { get; set; } = string.Empty;
-        public int Id => User.Id;
-        public string Name => User.Name;
-        public string LastName => User.LastName;
-        public string Pseudo => User.Pseudo;
-        public string Email => User.Email ?? string.Empty;
-        public string City => User.City ?? string.Empty;
     }
 
     protected override async Task OnInitializedAsync()
@@ -86,7 +129,7 @@ else
             foreach (var user in users)
             {
                 var roles = await UserManager.GetRolesAsync(user);
-                var role = roles.FirstOrDefault() ?? "Aucun rôle";
+                var role = roles.FirstOrDefault() ?? "Utilisateur";
                 usersWithRoles.Add(new UserWithRole
                     {
                         User = user,
@@ -102,6 +145,32 @@ else
         {
             isLoading = false;
         }
+    }
+
+    private void ConfirmDelete(User user)
+    {
+        userToDelete = user;
+        showDeleteModal = true;
+    }
+
+    private async Task DeleteUser()
+    {
+        if (userToDelete != null)
+        {
+            await UserManager.DeleteAsync(userToDelete);
+            // Recharger la liste
+            usersWithRoles.Clear();
+            await OnInitializedAsync();
+        }
+
+        showDeleteModal = false;
+        userToDelete = null;
+    }
+
+    private void CancelDelete()
+    {
+        showDeleteModal = false;
+        userToDelete = null;
     }
 
     public async ValueTask DisposeAsync() => await context.DisposeAsync();
