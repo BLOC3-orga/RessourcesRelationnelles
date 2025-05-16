@@ -1,174 +1,167 @@
-﻿@page "/users/edit/{UserId:int}"
-
+﻿@page "/users/edit"
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
 @using R2Model.Entities
-
+@inject IDbContextFactory<R2Model.Context.R2DbContext> DbFactory
+@inject NavigationManager NavigationManager
 @inject UserManager<User> UserManager
 @inject RoleManager<IdentityRole<int>> RoleManager
-@inject NavigationManager NavigationManager
-@inject ILogger<Edit> Logger
 
-<h1>Modifier l'utilisateur</h1>
+<PageTitle>Edit</PageTitle>
 
-@if (IsLoading)
+<h1>Edit</h1>
+
+<h2>User</h2>
+<hr />
+@if (User is null)
 {
-    <p><em>Chargement...</em></p>
-}
-else if (!string.IsNullOrEmpty(ErrorMessage))
-{
-    <p class="text-danger">@((MarkupString)ErrorMessage)</p>
-}
-else if (Model == null)
-{
-    <p class="text-danger">Utilisateur introuvable.</p>
+    <p><em>Loading...</em></p>
 }
 else
 {
-    <EditForm Model="@Model" OnValidSubmit="UpdateUserAsync" FormName="editUserForm">
-        <DataAnnotationsValidator />
-        <ValidationSummary />
+    <div class="row">
+        <div class="col-md-4">
+            <EditForm method="post" Model="User" OnValidSubmit="UpdateUser" FormName="edit" Enhance>
+                <DataAnnotationsValidator />
+                <ValidationSummary role="alert" />
+                <input type="hidden" name="User.Id" value="@User.Id" />
+                <div class="mb-3">
+                    <label for="name" class="form-label">Name:</label>
+                    <InputText id="name" @bind-Value="User.Name" class="form-control" />
+                    <ValidationMessage For="() => User.Name" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="lastname" class="form-label">LastName:</label>
+                    <InputText id="lastname" @bind-Value="User.LastName" class="form-control" />
+                    <ValidationMessage For="() => User.LastName" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="pseudo" class="form-label">Pseudo:</label>
+                    <InputText id="pseudo" @bind-Value="User.Pseudo" class="form-control" />
+                    <ValidationMessage For="() => User.Pseudo" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="city" class="form-label">City:</label>
+                    <InputText id="city" @bind-Value="User.City" class="form-control" />
+                    <ValidationMessage For="() => User.City" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="address" class="form-label">Address:</label>
+                    <InputText id="address" @bind-Value="User.Address" class="form-control" />
+                    <ValidationMessage For="() => User.Address" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="isaccountactivated" class="form-label">IsAccountActivated:</label>
+                    <InputCheckbox id="isaccountactivated" @bind-Value="User.IsAccountActivated" class="form-check-input" />
+                    <ValidationMessage For="() => User.IsAccountActivated" class="text-danger" />
+                </div>
 
-        <div>
-            <label>Nom</label>
-            <InputText @bind-Value="Model.Name" class="form-control" />
-        </div>
-        <div>
-            <label>Prénom</label>
-            <InputText @bind-Value="Model.LastName" class="form-control" />
-        </div>
-        <div>
-            <label>Pseudo</label>
-            <InputText @bind-Value="Model.Pseudo" class="form-control" />
-        </div>
-        <div>
-            <label>Ville</label>
-            <InputText @bind-Value="Model.City" class="form-control" />
-        </div>
-        <div>
-            <label>Adresse</label>
-            <InputText @bind-Value="Model.Address" class="form-control" />
-        </div>
+                <div class="mb-3">
+                    <label for="role" class="form-label">Rôle:</label>
+                    <InputSelect id="role" @bind-Value="SelectedRole" class="form-select">
+                        @foreach (var role in AvailableRoles)
+                        {
+                            <option value="@role.Name">@role.Name</option>
+                        }
+                    </InputSelect>
+                </div>
 
-        <div>
-            <label>Rôle</label>
-            <InputSelect @bind-Value="SelectedRole" class="form-select">
-                @foreach (var role in Roles)
-                {
-                    <option value="@role.Name">@role.Name</option>
-                }
-            </InputSelect>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </EditForm>
         </div>
-
-        <button type="submit" class="btn btn-primary mt-3">Enregistrer</button>
-
-        @if (IsSuccess)
-        {
-            <p class="text-success mt-2">Utilisateur mis à jour avec succès.</p>
-        }
-    </EditForm>
+    </div>
 }
 
-@code {
-    [Parameter]
-    public int UserId { get; set; }
+<div>
+    <a href="/users">Back to List</a>
+</div>
 
-    private User? Model;
-    private List<IdentityRole<int>> Roles = new();
+@code {
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    [SupplyParameterFromForm]
+    private User? User { get; set; }
+
+    // Nouvelles propriétés pour gérer les rôles
+    private List<IdentityRole<int>> AvailableRoles = new();
     private string SelectedRole = string.Empty;
-    private bool IsLoading = true;
-    private string ErrorMessage = string.Empty;
-    private bool IsSuccess = false;
 
     protected override async Task OnInitializedAsync()
     {
-        try
-        {
-            Roles = await RoleManager.Roles.ToListAsync();
-            Model = await UserManager.FindByIdAsync(UserId.ToString());
+        using var context = DbFactory.CreateDbContext();
+        User ??= await context.Users.FirstOrDefaultAsync(m => m.Id == Id);
 
-            if (Model != null)
-            {
-                var userRoles = await UserManager.GetRolesAsync(Model);
-                SelectedRole = userRoles.FirstOrDefault() ?? Roles.FirstOrDefault()?.Name ?? string.Empty;
-
-                Logger.LogInformation($"Utilisateur chargé : {Model.Name} {Model.LastName}, rôle actuel : {SelectedRole}");
-            }
-            else
-            {
-                ErrorMessage = "Utilisateur introuvable.";
-            }
-        }
-        catch (Exception ex)
+        if (User is null)
         {
-            Logger.LogError(ex, "Erreur lors du chargement de l'utilisateur");
-            ErrorMessage = "Une erreur est survenue lors du chargement.";
-        }
-        finally
-        {
-            IsLoading = false;
-        }
-    }
-
-    private async Task UpdateUserAsync()
-    {
-        ErrorMessage = string.Empty;
-        IsSuccess = false;
-
-        if (Model == null)
-        {
-            ErrorMessage = "Utilisateur non chargé.";
+            NavigationManager.NavigateTo("notfound");
             return;
         }
 
+        // Charger les rôles disponibles
+        AvailableRoles = await RoleManager.Roles.ToListAsync();
+
+        // Déterminer le rôle actuel de l'utilisateur
+        var userRoles = await UserManager.GetRolesAsync(User);
+        SelectedRole = userRoles.FirstOrDefault() ?? AvailableRoles.FirstOrDefault()?.Name ?? string.Empty;
+
+        Console.WriteLine($"Utilisateur chargé: {User.Name} {User.LastName}, rôle actuel: {SelectedRole}");
+    }
+
+    private async Task UpdateUser()
+    {
+        using var context = DbFactory.CreateDbContext();
+
+        var userInDb = await context.Users.FindAsync(User!.Id);
+
+        if (userInDb == null)
+        {
+            NavigationManager.NavigateTo("notfound");
+            return;
+        }
+
+        Console.WriteLine($"Mise à jour de l'utilisateur {userInDb.Id}:");
+        Console.WriteLine($"Ancien: {userInDb.Name}, {userInDb.LastName}, {userInDb.Pseudo}, {userInDb.City}, {userInDb.Address}");
+        Console.WriteLine($"Nouveau: {User.Name}, {User.LastName}, {User.Pseudo}, {User.City}, {User.Address}");
+
+        userInDb.Name = User.Name;
+        userInDb.LastName = User.LastName;
+        userInDb.Pseudo = User.Pseudo;
+        userInDb.City = User.City;
+        userInDb.Address = User.Address;
+        userInDb.IsAccountActivated = User.IsAccountActivated;
+
+
         try
         {
-            Logger.LogInformation("Début de la mise à jour de l'utilisateur.");
-            Logger.LogInformation($"Valeurs du modèle : Name = {Model.Name}, LastName = {Model.LastName}, Pseudo = {Model.Pseudo}");
-
-            var userInDb = await UserManager.FindByIdAsync(Model.Id.ToString());
-            if (userInDb == null)
+            await context.SaveChangesAsync();
+            Console.WriteLine("Modifications enregistrées avec succès");
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            if (!UserExists(User.Id))
             {
-                ErrorMessage = "Utilisateur introuvable en base.";
-                return;
+                Console.WriteLine($"Utilisateur {User.Id} introuvable");
+                NavigationManager.NavigateTo("notfound");
             }
-
-            userInDb.Name = Model.Name;
-            userInDb.LastName = Model.LastName;
-            userInDb.Pseudo = Model.Pseudo;
-            userInDb.City = Model.City;
-            userInDb.Address = Model.Address;
-
-            var updateResult = await UserManager.UpdateAsync(userInDb);
-            if (!updateResult.Succeeded)
+            else
             {
-                ErrorMessage = string.Join("<br/>", updateResult.Errors.Select(e => e.Description));
-                return;
+                Console.WriteLine($"Erreur de concurrence: {ex.Message}");
+                throw;
             }
-
-            // Mise à jour des rôles
-            var currentRoles = await UserManager.GetRolesAsync(userInDb);
-            var removeResult = await UserManager.RemoveFromRolesAsync(userInDb, currentRoles);
-            if (!removeResult.Succeeded)
-            {
-                ErrorMessage = string.Join("<br/>", removeResult.Errors.Select(e => e.Description));
-                return;
-            }
-
-            var addRoleResult = await UserManager.AddToRoleAsync(userInDb, SelectedRole);
-            if (!addRoleResult.Succeeded)
-            {
-                ErrorMessage = string.Join("<br/>", addRoleResult.Errors.Select(e => e.Description));
-                return;
-            }
-
-            IsSuccess = true;
-            Logger.LogInformation("Mise à jour de l'utilisateur réussie.");
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Erreur lors de la mise à jour de l'utilisateur");
-            ErrorMessage = "Une erreur est survenue lors de la mise à jour.";
+            Console.WriteLine($"Erreur lors de la mise à jour: {ex.Message}");
+            throw;
         }
+
+        NavigationManager.NavigateTo("/users");
+    }
+
+    private bool UserExists(int id)
+    {
+        using var context = DbFactory.CreateDbContext();
+        return context.Users.Any(e => e.Id == id);
     }
 }

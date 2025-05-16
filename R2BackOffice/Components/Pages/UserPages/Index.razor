@@ -43,13 +43,13 @@ else
         </TemplateColumn>
         <TemplateColumn Title="Actions">
             <div class="btn-group">
-                <a href="@($"users/edit/{context.User.Id}")" class="btn btn-sm btn-outline-primary">
+                <a href="@($"users/edit?id={context.User.Id}")" class="btn btn-sm btn-outline-primary">
                     <i class="bi bi-pencil"></i> Edit
                 </a>
-                <a href="@($"users/edit/{context.User.Id}")" class="btn btn-sm btn-outline-primary">
+                <a href="@($"users/details?id={context.User.Id}")" class="btn btn-sm btn-outline-info">
                     <i class="bi bi-info-circle"></i> Details
                 </a>
-                <a href="@($"users/edit/{context.User.Id}")" class="btn btn-sm btn-outline-primary">
+                <a href="@($"users/delete?id={context.User.Id}")" class="btn btn-sm btn-outline-danger">
                     <i class="bi bi-trash"></i> Delete
                 </a>
             </div>
