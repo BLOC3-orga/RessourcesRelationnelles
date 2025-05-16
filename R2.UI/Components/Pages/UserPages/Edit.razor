@@ -1,8 +1,11 @@
 ﻿@page "/users/edit"
+@using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
 @using R2.Data.Entities
 @inject IDbContextFactory<R2.Data.Context.R2DbContext> DbFactory
 @inject NavigationManager NavigationManager
+@inject UserManager<User> UserManager
+@inject RoleManager<IdentityRole<int>> RoleManager
 
 <PageTitle>Edit</PageTitle>
 
@@ -20,7 +23,7 @@ else
         <div class="col-md-4">
             <EditForm method="post" Model="User" OnValidSubmit="UpdateUser" FormName="edit" Enhance>
                 <DataAnnotationsValidator />
-                <ValidationSummary role="alert"/>
+                <ValidationSummary role="alert" />
                 <input type="hidden" name="User.Id" value="@User.Id" />
                 <div class="mb-3">
                     <label for="name" class="form-label">Name:</label>
@@ -52,76 +55,17 @@ else
                     <InputCheckbox id="isaccountactivated" @bind-Value="User.IsAccountActivated" class="form-check-input" />
                     <ValidationMessage For="() => User.IsAccountActivated" class="text-danger" />
                 </div>
-                <div class="mb-3">
-                    <label for="username" class="form-label">UserName:</label>
-                    <InputText id="username" @bind-Value="User.UserName" class="form-control" />
-                    <ValidationMessage For="() => User.UserName" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="normalizedusername" class="form-label">NormalizedUserName:</label>
-                    <InputText id="normalizedusername" @bind-Value="User.NormalizedUserName" class="form-control" />
-                    <ValidationMessage For="() => User.NormalizedUserName" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="email" class="form-label">Email:</label>
-                    <InputText id="email" @bind-Value="User.Email" class="form-control" />
-                    <ValidationMessage For="() => User.Email" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="normalizedemail" class="form-label">NormalizedEmail:</label>
-                    <InputText id="normalizedemail" @bind-Value="User.NormalizedEmail" class="form-control" />
-                    <ValidationMessage For="() => User.NormalizedEmail" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="emailconfirmed" class="form-label">EmailConfirmed:</label>
-                    <InputCheckbox id="emailconfirmed" @bind-Value="User.EmailConfirmed" class="form-check-input" />
-                    <ValidationMessage For="() => User.EmailConfirmed" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="passwordhash" class="form-label">PasswordHash:</label>
-                    <InputText id="passwordhash" @bind-Value="User.PasswordHash" class="form-control" />
-                    <ValidationMessage For="() => User.PasswordHash" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="securitystamp" class="form-label">SecurityStamp:</label>
-                    <InputText id="securitystamp" @bind-Value="User.SecurityStamp" class="form-control" />
-                    <ValidationMessage For="() => User.SecurityStamp" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="concurrencystamp" class="form-label">ConcurrencyStamp:</label>
-                    <InputText id="concurrencystamp" @bind-Value="User.ConcurrencyStamp" class="form-control" />
-                    <ValidationMessage For="() => User.ConcurrencyStamp" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="phonenumber" class="form-label">PhoneNumber:</label>
-                    <InputText id="phonenumber" @bind-Value="User.PhoneNumber" class="form-control" />
-                    <ValidationMessage For="() => User.PhoneNumber" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="phonenumberconfirmed" class="form-label">PhoneNumberConfirmed:</label>
-                    <InputCheckbox id="phonenumberconfirmed" @bind-Value="User.PhoneNumberConfirmed" class="form-check-input" />
-                    <ValidationMessage For="() => User.PhoneNumberConfirmed" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="twofactorenabled" class="form-label">TwoFactorEnabled:</label>
-                    <InputCheckbox id="twofactorenabled" @bind-Value="User.TwoFactorEnabled" class="form-check-input" />
-                    <ValidationMessage For="() => User.TwoFactorEnabled" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="lockoutend" class="form-label">LockoutEnd:</label>
-                    <InputDate id="lockoutend" @bind-Value="User.LockoutEnd" class="form-control" />
-                    <ValidationMessage For="() => User.LockoutEnd" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="lockoutenabled" class="form-label">LockoutEnabled:</label>
-                    <InputCheckbox id="lockoutenabled" @bind-Value="User.LockoutEnabled" class="form-check-input" />
-                    <ValidationMessage For="() => User.LockoutEnabled" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="accessfailedcount" class="form-label">AccessFailedCount:</label>
-                    <InputNumber id="accessfailedcount" @bind-Value="User.AccessFailedCount" class="form-control" />
-                    <ValidationMessage For="() => User.AccessFailedCount" class="text-danger" />
-                </div>
+                
+               <!-- <div class="mb-3">
+                    <label for="role" class="form-label">Rôle:</label>
+                    <InputSelect id="role" @bind-Value="SelectedRole" class="form-select">
+                        @foreach (var role in AvailableRoles)
+                        {
+                           // <option value="@role.Name">@role.Name</option>
+                        }
+                    </InputSelect>
+                 </div>-->
+                
                 <button type="submit" class="btn btn-primary">Save</button>
             </EditForm>
         </div>
@@ -138,6 +82,11 @@ else
 
     [SupplyParameterFromForm]
     private User? User { get; set; }
+    
+    // Propriétés pour gérer les rôles
+    private List<IdentityRole<int>> AvailableRoles = new();
+    private string SelectedRole = string.Empty;
+    private string OriginalRole = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -147,30 +96,97 @@ else
         if (User is null)
         {
             NavigationManager.NavigateTo("notfound");
+            return;
         }
+        
+        // Charger les rôles disponibles
+     //   AvailableRoles = await RoleManager.Roles.ToListAsync();
+        
+        // Déterminer le rôle actuel de l'utilisateur
+     /*   var userRoles = await UserManager.GetRolesAsync(User);
+        SelectedRole = userRoles.FirstOrDefault() ?? AvailableRoles.FirstOrDefault()?.Name ?? string.Empty;
+        OriginalRole = SelectedRole; // Stocker le rôle original pour le comparer plus tard
+
+        Console.WriteLine($"Utilisateur chargé: {User.Name} {User.LastName}, rôle actuel: {SelectedRole}");*/
     }
 
-    // To protect from overposting attacks, enable the specific properties you want to bind to.
-    // For more information, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
     private async Task UpdateUser()
     {
+        // 1. Mettre à jour les informations de base de l'utilisateur
         using var context = DbFactory.CreateDbContext();
-        context.Attach(User!).State = EntityState.Modified;
+
+        var userInDb = await context.Users.FindAsync(User!.Id);
+
+        if (userInDb == null)
+        {
+            NavigationManager.NavigateTo("notfound");
+            return;
+        }
+
+        Console.WriteLine($"Mise à jour de l'utilisateur {userInDb.Id}:");
+        Console.WriteLine($"Ancien: {userInDb.Name}, {userInDb.LastName}, {userInDb.Pseudo}, {userInDb.City}, {userInDb.Address}");
+        Console.WriteLine($"Nouveau: {User.Name}, {User.LastName}, {User.Pseudo}, {User.City}, {User.Address}");
+    //    Console.WriteLine($"Rôle original: {OriginalRole}, Nouveau rôle: {SelectedRole}");
+
+        userInDb.Name = User.Name;
+        userInDb.LastName = User.LastName;
+        userInDb.Pseudo = User.Pseudo;
+        userInDb.City = User.City;
+        userInDb.Address = User.Address;
+        userInDb.IsAccountActivated = User.IsAccountActivated;
 
         try
         {
             await context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!UserExists(User!.Id))
+            Console.WriteLine("Modifications des données de base enregistrées avec succès");
+            
+           /* if (SelectedRole != OriginalRole)
             {
+                Console.WriteLine($"Mise à jour du rôle: {OriginalRole} -> {SelectedRole}");
+
+                var userForRole = await UserManager.FindByIdAsync(User.Id.ToString());
+
+                if (userForRole != null)
+                {
+                    if (!string.IsNullOrEmpty(OriginalRole))
+                    {
+                        await UserManager.RemoveFromRoleAsync(userForRole, OriginalRole);
+                        }
+
+                    if (!string.IsNullOrEmpty(SelectedRole))
+                    {
+                        await UserManager.AddToRoleAsync(userForRole, SelectedRole);
+                        }
+
+                    Console.WriteLine("Modification du rôle enregistrée avec succès");
+                    }
+                else
+                {
+                    Console.WriteLine("Utilisateur non trouvé pour la mise à jour du rôle");
+                    }
+                }
+                 else
+            {
+                Console.WriteLine("Le rôle n'a pas été modifié, aucune mise à jour nécessaire");
+                }*/
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            if (!UserExists(User.Id))
+            {
+                Console.WriteLine($"Utilisateur {User.Id} introuvable");
                 NavigationManager.NavigateTo("notfound");
             }
             else
             {
+                Console.WriteLine($"Erreur de concurrence: {ex.Message}");
                 throw;
             }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors de la mise à jour: {ex.Message}");
+            throw;
         }
 
         NavigationManager.NavigateTo("/users");
