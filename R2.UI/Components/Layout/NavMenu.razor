@@ -1,4 +1,7 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">(Re)Sources Relationnelles</a>
     </div>
@@ -8,8 +11,22 @@
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="flex-column">
+        <AuthorizeView>
+            <Authorized>
+                <div class="user-greeting px-3 py-2 text-white">
+                    Bonjour @context.User.Identity?.Name !
+                </div>
+                <div class="nav-divider"></div>
+            </Authorized>
+        </AuthorizeView>
+
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Accueil
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="resources">
                 <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Ressources
             </NavLink>
         </div>
@@ -18,21 +35,26 @@
                 <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Catégories
             </NavLink>
         </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="users">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Utilisateurs
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="userrights">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Droits
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="statistics">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Statistiques
-            </NavLink>
-        </div>
+
+        <AuthorizeView Roles="Administrateur,Super-Administrateur,Modérateur">
+            <Authorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="users">
+                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Utilisateurs
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="userrights">
+                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Droits
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="statistics">
+                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Statistiques
+                    </NavLink>
+                </div>
+            </Authorized>
+        </AuthorizeView>
 
         <AuthorizeView>
             <Authorized>
@@ -57,3 +79,14 @@
         </AuthorizeView>
     </nav>
 </div>
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}
