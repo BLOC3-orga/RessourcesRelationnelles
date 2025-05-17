@@ -53,14 +53,6 @@
             <p>Vous n'avez pas de compte? <a href="register">S'inscrire</a></p>
         </div>
 
-        @if (IsSuccess)
-        {
-            <div class="alert alert-success mt-3">
-                <p>Connexion réussie !</p>
-                <p>Cliquez <a href="/" class="alert-link">ici</a> pour aller à la page d'accueil.</p>
-            </div>
-        }
-
         @if (!string.IsNullOrEmpty(ErrorMessage))
         {
             <div class="alert alert-danger mt-3">
@@ -158,5 +150,7 @@
             IsProcessing = false;
             StateHasChanged();
         }
+        NavigationManager.NavigateTo("/");
+
     }
 }

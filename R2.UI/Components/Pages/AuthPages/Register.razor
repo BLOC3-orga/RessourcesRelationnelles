@@ -18,14 +18,6 @@
     </div>
 }
 
-@if (IsSuccess)
-{
-    <div class="alert alert-success">
-        <p>Compte créé avec succès et vous êtes maintenant connecté!</p>
-        <p>Cliquez <a href="/" class="alert-link">ici</a> pour aller à la page d'accueil.</p>
-    </div>
-}
-
 <div class="row">
     <div class="col-md-6">
         <EditForm Model="@this" OnValidSubmit="CreateUserAsync" FormName="RegisterForm">
@@ -152,7 +144,6 @@
             ErrorMessage = string.Empty;
             IsSuccess = false;
 
-            // Vérifier que les champs obligatoires sont remplis
             if (string.IsNullOrEmpty(Email) || string.IsNullOrEmpty(Password) ||
                 string.IsNullOrEmpty(Name) || string.IsNullOrEmpty(LastName) ||
                 string.IsNullOrEmpty(Pseudo))
@@ -162,7 +153,6 @@
                 return;
             }
 
-            // Vérifier que les mots de passe correspondent
             if (Password != ConfirmPassword)
             {
                 ErrorMessage = "Les mots de passe ne correspondent pas.";
@@ -170,7 +160,6 @@
                 return;
             }
 
-            // Vérifier que le pseudo n'est pas déjà utilisé
             var existingUser = await UserManager.FindByNameAsync(Pseudo);
             if (existingUser != null)
             {
@@ -179,7 +168,6 @@
                 return;
             }
 
-            // Vérifier que l'email n'est pas déjà utilisé
             var existingEmail = await UserManager.FindByEmailAsync(Email);
             if (existingEmail != null)
             {
@@ -243,5 +231,7 @@
             IsProcessing = false;
             StateHasChanged();
         }
+        NavigationManager.NavigateTo("/");
+
     }
 }
