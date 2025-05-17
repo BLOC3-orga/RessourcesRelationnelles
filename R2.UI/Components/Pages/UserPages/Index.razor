@@ -1,4 +1,6 @@
 ﻿@page "/users"
+@using Microsoft.AspNetCore.Components.Web
+@rendermode InteractiveServer
 @using Microsoft.EntityFrameworkCore
 @using R2.Data.Entities
 @using R2.Data.Context
@@ -31,6 +33,8 @@
 else
 {
     @* LISTE DES UTILISATEURS *@
+    <button class="btn btn-success" @onclick="() => Console.WriteLine('a')">Test Clic</button>
+
     <div class="card shadow-sm">
         <div class="list-group list-group-flush">
             @foreach (var userWithRole in usersWithRoles)
@@ -83,9 +87,12 @@ else
     <div class="modal fade show" style="display: block;" tabindex="-1" role="dialog">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Confirmer la suppression</h5>
-                    <button type="button" class="btn-close" @onclick="CancelDelete"></button>
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Confirmer la suppression
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CancelDelete"></button>
                 </div>
                 <div class="modal-body">
                     <p>Êtes-vous sûr de vouloir supprimer l'utilisateur <strong>@userToDelete?.Name @userToDelete?.LastName</strong> ?</p>
@@ -131,10 +138,10 @@ else
                 var roles = await UserManager.GetRolesAsync(user);
                 var role = roles.FirstOrDefault() ?? "Utilisateur";
                 usersWithRoles.Add(new UserWithRole
-                    {
-                        User = user,
-                        Role = role
-                    });
+                {
+                    User = user,
+                    Role = role
+                });
             }
         }
         catch (Exception)

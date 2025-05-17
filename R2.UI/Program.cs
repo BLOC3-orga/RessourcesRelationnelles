@@ -15,6 +15,9 @@ builder.Services.AddHttpClient();
 builder.Services.AddDbContextFactory<R2DbContext>(options =>
     options.UseSqlServer(connectionString));
 
+// Token ANtiForgery pour les requêtes POST (suppression d'un user)
+builder.Services.AddAntiforgery();
+
 // Configuration d'Identity
 builder.Services.AddDefaultIdentity<User>(options => {
     options.Password.RequireDigit = true;
