@@ -9,152 +9,238 @@
 
 <PageTitle>Inscription</PageTitle>
 
-<h1>Créer un nouveau compte</h1>
+<h1>Créer un compte</h1>
+
+@if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <div class="alert alert-danger">
+        @((MarkupString)ErrorMessage)
+    </div>
+}
+
+@if (IsSuccess)
+{
+    <div class="alert alert-success">
+        <p>Compte créé avec succès et vous êtes maintenant connecté!</p>
+        <p>Cliquez <a href="/" class="alert-link">ici</a> pour aller à la page d'accueil.</p>
+    </div>
+}
 
 <div class="row">
     <div class="col-md-6">
-        <EditForm Model="@registerModel" OnValidSubmit="RegisterUser" FormName="registerForm">
+        <EditForm Model="@this" OnValidSubmit="CreateUserAsync" FormName="RegisterForm">
             <DataAnnotationsValidator />
-            <ValidationSummary />
+            <ValidationSummary class="text-danger" role="alert" />
 
-            <div class="form-group mb-3">
-                <label for="email">Email</label>
-                <InputText id="email" @bind-Value="registerModel.Email" class="form-control" />
-                <ValidationMessage For="@(() => registerModel.Email)" />
+            <div class="mb-3">
+                <label for="email" class="form-label">Email:</label>
+                <InputText id="email" @bind-Value="Email" class="form-control" />
             </div>
 
-            <div class="form-group mb-3">
-                <label for="name">Prénom</label>
-                <InputText id="name" @bind-Value="registerModel.Name" class="form-control" />
-                <ValidationMessage For="@(() => registerModel.Name)" />
+            <div class="mb-3">
+                <label for="name" class="form-label">Prénom:</label>
+                <InputText id="name" @bind-Value="Name" class="form-control" />
             </div>
 
-            <div class="form-group mb-3">
-                <label for="lastName">Nom</label>
-                <InputText id="lastName" @bind-Value="registerModel.LastName" class="form-control" />
-                <ValidationMessage For="@(() => registerModel.LastName)" />
+            <div class="mb-3">
+                <label for="lastname" class="form-label">Nom:</label>
+                <InputText id="lastname" @bind-Value="LastName" class="form-control" />
             </div>
 
-            <div class="form-group mb-3">
-                <label for="pseudo">Pseudo</label>
-                <InputText id="pseudo" @bind-Value="registerModel.Pseudo" class="form-control" />
-                <ValidationMessage For="@(() => registerModel.Pseudo)" />
+            <div class="mb-3">
+                <label for="pseudo" class="form-label">Pseudo:</label>
+                <InputText id="pseudo" @bind-Value="Pseudo" class="form-control" />
             </div>
 
-            <div class="form-group mb-3">
-                <label for="city">Ville</label>
-                <InputText id="city" @bind-Value="registerModel.City" class="form-control" />
-                <ValidationMessage For="@(() => registerModel.City)" />
+            <div class="mb-3">
+                <label for="city" class="form-label">Ville:</label>
+                <InputText id="city" @bind-Value="City" class="form-control" />
             </div>
 
-            <div class="form-group mb-3">
-                <label for="address">Adresse</label>
-                <InputText id="address" @bind-Value="registerModel.Address" class="form-control" />
-                <ValidationMessage For="@(() => registerModel.Address)" />
+            <div class="mb-3">
+                <label for="address" class="form-label">Adresse:</label>
+                <InputText id="address" @bind-Value="Address" class="form-control" />
             </div>
 
-            <div class="form-group mb-3">
-                <label for="password">Mot de passe</label>
-                <InputText id="password" @bind-Value="registerModel.Password" class="form-control" type="password" />
-                <ValidationMessage For="@(() => registerModel.Password)" />
+            <div class="mb-3">
+                <label for="password" class="form-label">Mot de passe:</label>
+                <InputText id="password" type="password" @bind-Value="Password" class="form-control" />
                 <small class="form-text text-muted">
-                    Le mot de passe doit contenir au moins 8 caractères, incluant une majuscule, une minuscule,
+                    Le mot de passe doit contenir au moins 8 caractères, dont une majuscule, une minuscule,
                     un chiffre et un caractère spécial.
                 </small>
             </div>
 
-            <div class="form-group mb-3">
-                <label for="confirmPassword">Confirmer le mot de passe</label>
-                <InputText id="confirmPassword" @bind-Value="registerModel.ConfirmPassword" class="form-control" type="password" />
-                <ValidationMessage For="@(() => registerModel.ConfirmPassword)" />
+            <div class="mb-3">
+                <label for="confirmPassword" class="form-label">Confirmer le mot de passe:</label>
+                <InputText id="confirmPassword" type="password" @bind-Value="ConfirmPassword" class="form-control" />
             </div>
 
-            <button type="submit" class="btn btn-primary">S'inscrire</button>
+            <button type="submit" class="btn btn-primary" disabled="@IsProcessing">
+                @if (IsProcessing)
+                {
+                    <span>Inscription en cours...</span>
+                }
+                else
+                {
+                    <span>S'inscrire</span>
+                }
+            </button>
         </EditForm>
-
-        <div class="mt-3">
-            <p>Vous avez déjà un compte? <a href="login">Se connecter</a></p>
-        </div>
-
-        @if (!string.IsNullOrEmpty(errorMessage))
-        {
-            <div class="alert alert-danger mt-3">
-                @errorMessage
-            </div>
-        }
     </div>
 </div>
 
+<div class="mt-3">
+    <p>Vous avez déjà un compte? <a href="login">Se connecter</a></p>
+</div>
+
 @code {
-    private RegisterModel registerModel = new();
-    private string errorMessage = string.Empty;
+    private string ErrorMessage { get; set; } = string.Empty;
+    private bool IsProcessing { get; set; } = false;
+    private bool IsSuccess { get; set; } = false;
 
-    public class RegisterModel
+    [Required(ErrorMessage = "L'email est requis")]
+    [EmailAddress(ErrorMessage = "Format d'email invalide")]
+    [SupplyParameterFromForm]
+    public string Email { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Le prénom est requis")]
+    [SupplyParameterFromForm]
+    public string Name { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Le nom est requis")]
+    [SupplyParameterFromForm]
+    public string LastName { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Le pseudo est requis")]
+    [SupplyParameterFromForm]
+    public string Pseudo { get; set; } = string.Empty;
+
+    [SupplyParameterFromForm]
+    public string? City { get; set; } = string.Empty;
+
+    [SupplyParameterFromForm]
+    public string? Address { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Le mot de passe est requis")]
+    [StringLength(100, ErrorMessage = "Le {0} doit faire au moins {2} caractères et au maximum {1} caractères.", MinimumLength = 8)]
+    [SupplyParameterFromForm]
+    public string Password { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "La confirmation du mot de passe est requise")]
+    [Compare("Password", ErrorMessage = "Les mots de passe ne correspondent pas.")]
+    [SupplyParameterFromForm]
+    public string ConfirmPassword { get; set; } = string.Empty;
+
+    private void ResetForm()
     {
-        [Required(ErrorMessage = "L'adresse email est requise")]
-        [EmailAddress(ErrorMessage = "Format d'email invalide")]
-        public string Email { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Le prénom est requis")]
-        public string Name { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Le nom est requis")]
-        public string LastName { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Le pseudo est requis")]
-        public string Pseudo { get; set; } = string.Empty;
-
-        public string City { get; set; } = string.Empty;
-
-        public string Address { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Le mot de passe est requis")]
-        [StringLength(100, ErrorMessage = "Le {0} doit faire au moins {2} caractères et au maximum {1} caractères.", MinimumLength = 8)]
-        [DataType(DataType.Password)]
-        public string Password { get; set; } = string.Empty;
-
-        [DataType(DataType.Password)]
-        [Compare("Password", ErrorMessage = "Les mots de passe ne correspondent pas.")]
-        public string ConfirmPassword { get; set; } = string.Empty;
+        Email = string.Empty;
+        Name = string.Empty;
+        LastName = string.Empty;
+        Pseudo = string.Empty;
+        City = string.Empty;
+        Address = string.Empty;
+        Password = string.Empty;
+        ConfirmPassword = string.Empty;
     }
 
-    private async Task RegisterUser()
+    private async Task CreateUserAsync()
     {
         try
         {
-            Logger.LogInformation("Tentative d'inscription pour {Email}", registerModel.Email);
+            IsProcessing = true;
+            ErrorMessage = string.Empty;
+            IsSuccess = false;
+
+            // Vérifier que les champs obligatoires sont remplis
+            if (string.IsNullOrEmpty(Email) || string.IsNullOrEmpty(Password) ||
+                string.IsNullOrEmpty(Name) || string.IsNullOrEmpty(LastName) ||
+                string.IsNullOrEmpty(Pseudo))
+            {
+                ErrorMessage = "Veuillez remplir tous les champs obligatoires.";
+                IsProcessing = false;
+                return;
+            }
+
+            // Vérifier que les mots de passe correspondent
+            if (Password != ConfirmPassword)
+            {
+                ErrorMessage = "Les mots de passe ne correspondent pas.";
+                IsProcessing = false;
+                return;
+            }
+
+            // Vérifier que le pseudo n'est pas déjà utilisé
+            var existingUser = await UserManager.FindByNameAsync(Pseudo);
+            if (existingUser != null)
+            {
+                ErrorMessage = "Ce pseudo est déjà utilisé. Veuillez en choisir un autre.";
+                IsProcessing = false;
+                return;
+            }
+
+            // Vérifier que l'email n'est pas déjà utilisé
+            var existingEmail = await UserManager.FindByEmailAsync(Email);
+            if (existingEmail != null)
+            {
+                ErrorMessage = "Cet email est déjà utilisé. Veuillez en utiliser un autre ou vous connecter.";
+                IsProcessing = false;
+                return;
+            }
 
             var user = new User
                 {
-                    UserName = registerModel.Email,
-                    Email = registerModel.Email,
-                    Name = registerModel.Name,
-                    LastName = registerModel.LastName,
-                    Pseudo = registerModel.Pseudo,
-                    City = registerModel.City,
-                    Address = registerModel.Address
+                    UserName = Pseudo,
+                    Email = Email,
+                    Name = Name,
+                    LastName = LastName,
+                    Pseudo = Pseudo,
+                    City = City ?? string.Empty,
+                    Address = Address ?? string.Empty,
+                    IsAccountActivated = true,
+                    EmailConfirmed = true
                 };
 
-            var result = await UserManager.CreateAsync(user, registerModel.Password);
+            Logger.LogInformation($"Tentative d'inscription: {user.Email}");
+
+            var result = await UserManager.CreateAsync(user, Password);
 
             if (result.Succeeded)
             {
-                Logger.LogInformation("Utilisateur créé avec succès");
-                await SignInManager.SignInAsync(user, isPersistent: false);
-                NavigationManager.NavigateTo("/");
+                Logger.LogInformation($"Utilisateur inscrit avec succès: {user.Email}");
+
+                var roleResult = await UserManager.AddToRoleAsync(user, "Citoyen");
+
+                if (roleResult.Succeeded)
+                {
+                    await SignInManager.SignInAsync(user, isPersistent: false);
+
+                    ResetForm();
+
+                    IsSuccess = true;
+                }
+                else
+                {
+                    var roleErrorDetails = string.Join("<br/>", roleResult.Errors.Select(e => e.Description));
+                    ErrorMessage = $"Compte créé mais erreur lors de l'attribution du rôle:<br/>{roleErrorDetails}";
+                    Logger.LogError($"Erreur lors de l'attribution du rôle: {roleErrorDetails}");
+                }
             }
             else
             {
-                Logger.LogWarning("Échec de la création de l'utilisateur: {Errors}",
-                    string.Join(", ", result.Errors.Select(e => e.Description)));
-                errorMessage = string.Join(", ", result.Errors.Select(x => x.Description));
-                StateHasChanged();
+                var errorDetails = string.Join("<br/>", result.Errors.Select(e => e.Description));
+                ErrorMessage = $"Erreur lors de l'inscription:<br/>{errorDetails}";
+                Logger.LogError($"Erreur lors de l'inscription: {errorDetails}");
             }
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Exception lors de l'inscription");
-            errorMessage = $"Une erreur est survenue: {ex.Message}";
+            ErrorMessage = $"Une erreur s'est produite: {ex.Message}";
+        }
+        finally
+        {
+            IsProcessing = false;
             StateHasChanged();
         }
     }
