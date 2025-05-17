@@ -1,0 +1,237 @@
+﻿@page "/register"
+@using Microsoft.AspNetCore.Identity
+@using R2.Data.Entities
+@using System.ComponentModel.DataAnnotations
+@inject UserManager<User> UserManager
+@inject SignInManager<User> SignInManager
+@inject NavigationManager NavigationManager
+@inject ILogger<Register> Logger
+
+<PageTitle>Inscription</PageTitle>
+
+<h1>Créer un compte</h1>
+
+@if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <div class="alert alert-danger">
+        @((MarkupString)ErrorMessage)
+    </div>
+}
+
+<div class="row">
+    <div class="col-md-6">
+        <EditForm Model="@this" OnValidSubmit="CreateUserAsync" FormName="RegisterForm">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" role="alert" />
+
+            <div class="mb-3">
+                <label for="email" class="form-label">Email:</label>
+                <InputText id="email" @bind-Value="Email" class="form-control" />
+            </div>
+
+            <div class="mb-3">
+                <label for="name" class="form-label">Prénom:</label>
+                <InputText id="name" @bind-Value="Name" class="form-control" />
+            </div>
+
+            <div class="mb-3">
+                <label for="lastname" class="form-label">Nom:</label>
+                <InputText id="lastname" @bind-Value="LastName" class="form-control" />
+            </div>
+
+            <div class="mb-3">
+                <label for="pseudo" class="form-label">Pseudo:</label>
+                <InputText id="pseudo" @bind-Value="Pseudo" class="form-control" />
+            </div>
+
+            <div class="mb-3">
+                <label for="city" class="form-label">Ville:</label>
+                <InputText id="city" @bind-Value="City" class="form-control" />
+            </div>
+
+            <div class="mb-3">
+                <label for="address" class="form-label">Adresse:</label>
+                <InputText id="address" @bind-Value="Address" class="form-control" />
+            </div>
+
+            <div class="mb-3">
+                <label for="password" class="form-label">Mot de passe:</label>
+                <InputText id="password" type="password" @bind-Value="Password" class="form-control" />
+                <small class="form-text text-muted">
+                    Le mot de passe doit contenir au moins 8 caractères, dont une majuscule, une minuscule,
+                    un chiffre et un caractère spécial.
+                </small>
+            </div>
+
+            <div class="mb-3">
+                <label for="confirmPassword" class="form-label">Confirmer le mot de passe:</label>
+                <InputText id="confirmPassword" type="password" @bind-Value="ConfirmPassword" class="form-control" />
+            </div>
+
+            <button type="submit" class="btn btn-primary" disabled="@IsProcessing">
+                @if (IsProcessing)
+                {
+                    <span>Inscription en cours...</span>
+                }
+                else
+                {
+                    <span>S'inscrire</span>
+                }
+            </button>
+        </EditForm>
+    </div>
+</div>
+
+<div class="mt-3">
+    <p>Vous avez déjà un compte? <a href="login">Se connecter</a></p>
+</div>
+
+@code {
+    private string ErrorMessage { get; set; } = string.Empty;
+    private bool IsProcessing { get; set; } = false;
+    private bool IsSuccess { get; set; } = false;
+
+    [Required(ErrorMessage = "L'email est requis")]
+    [EmailAddress(ErrorMessage = "Format d'email invalide")]
+    [SupplyParameterFromForm]
+    public string Email { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Le prénom est requis")]
+    [SupplyParameterFromForm]
+    public string Name { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Le nom est requis")]
+    [SupplyParameterFromForm]
+    public string LastName { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Le pseudo est requis")]
+    [SupplyParameterFromForm]
+    public string Pseudo { get; set; } = string.Empty;
+
+    [SupplyParameterFromForm]
+    public string? City { get; set; } = string.Empty;
+
+    [SupplyParameterFromForm]
+    public string? Address { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Le mot de passe est requis")]
+    [StringLength(100, ErrorMessage = "Le {0} doit faire au moins {2} caractères et au maximum {1} caractères.", MinimumLength = 8)]
+    [SupplyParameterFromForm]
+    public string Password { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "La confirmation du mot de passe est requise")]
+    [Compare("Password", ErrorMessage = "Les mots de passe ne correspondent pas.")]
+    [SupplyParameterFromForm]
+    public string ConfirmPassword { get; set; } = string.Empty;
+
+    private void ResetForm()
+    {
+        Email = string.Empty;
+        Name = string.Empty;
+        LastName = string.Empty;
+        Pseudo = string.Empty;
+        City = string.Empty;
+        Address = string.Empty;
+        Password = string.Empty;
+        ConfirmPassword = string.Empty;
+    }
+
+    private async Task CreateUserAsync()
+    {
+        try
+        {
+            IsProcessing = true;
+            ErrorMessage = string.Empty;
+            IsSuccess = false;
+
+            if (string.IsNullOrEmpty(Email) || string.IsNullOrEmpty(Password) ||
+                string.IsNullOrEmpty(Name) || string.IsNullOrEmpty(LastName) ||
+                string.IsNullOrEmpty(Pseudo))
+            {
+                ErrorMessage = "Veuillez remplir tous les champs obligatoires.";
+                IsProcessing = false;
+                return;
+            }
+
+            if (Password != ConfirmPassword)
+            {
+                ErrorMessage = "Les mots de passe ne correspondent pas.";
+                IsProcessing = false;
+                return;
+            }
+
+            var existingUser = await UserManager.FindByNameAsync(Pseudo);
+            if (existingUser != null)
+            {
+                ErrorMessage = "Ce pseudo est déjà utilisé. Veuillez en choisir un autre.";
+                IsProcessing = false;
+                return;
+            }
+
+            var existingEmail = await UserManager.FindByEmailAsync(Email);
+            if (existingEmail != null)
+            {
+                ErrorMessage = "Cet email est déjà utilisé. Veuillez en utiliser un autre ou vous connecter.";
+                IsProcessing = false;
+                return;
+            }
+
+            var user = new User
+                {
+                    UserName = Pseudo,
+                    Email = Email,
+                    Name = Name,
+                    LastName = LastName,
+                    Pseudo = Pseudo,
+                    City = City ?? string.Empty,
+                    Address = Address ?? string.Empty,
+                    IsAccountActivated = true,
+                    EmailConfirmed = true
+                };
+
+            Logger.LogInformation($"Tentative d'inscription: {user.Email}");
+
+            var result = await UserManager.CreateAsync(user, Password);
+
+            if (result.Succeeded)
+            {
+                Logger.LogInformation($"Utilisateur inscrit avec succès: {user.Email}");
+
+                var roleResult = await UserManager.AddToRoleAsync(user, "Citoyen");
+
+                if (roleResult.Succeeded)
+                {
+                    await SignInManager.SignInAsync(user, isPersistent: false);
+
+                    ResetForm();
+
+                    IsSuccess = true;
+                }
+                else
+                {
+                    var roleErrorDetails = string.Join("<br/>", roleResult.Errors.Select(e => e.Description));
+                    ErrorMessage = $"Compte créé mais erreur lors de l'attribution du rôle:<br/>{roleErrorDetails}";
+                    Logger.LogError($"Erreur lors de l'attribution du rôle: {roleErrorDetails}");
+                }
+            }
+            else
+            {
+                var errorDetails = string.Join("<br/>", result.Errors.Select(e => e.Description));
+                ErrorMessage = $"Erreur lors de l'inscription:<br/>{errorDetails}";
+                Logger.LogError($"Erreur lors de l'inscription: {errorDetails}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Exception lors de l'inscription");
+            ErrorMessage = $"Une erreur s'est produite: {ex.Message}";
+        }
+        finally
+        {
+            IsProcessing = false;
+            StateHasChanged();
+        }
+        NavigationManager.NavigateTo("/");
+
+    }
+}

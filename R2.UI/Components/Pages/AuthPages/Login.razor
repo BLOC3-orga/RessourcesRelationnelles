@@ -1,0 +1,156 @@
+﻿@page "/login"
+@using Microsoft.AspNetCore.Identity
+@using R2.Data.Entities
+@using System.ComponentModel.DataAnnotations
+@inject SignInManager<User> SignInManager
+@inject UserManager<User> UserManager
+@inject NavigationManager NavigationManager
+@inject ILogger<Login> Logger
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Connexion</PageTitle>
+
+<h1>Se connecter</h1>
+
+<div class="row">
+    <div class="col-md-6">
+        <EditForm Model="@this" OnValidSubmit="LoginUser" FormName="loginForm">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" role="alert" />
+
+            <div class="form-group mb-3">
+                <label for="username">Email ou Pseudo</label>
+                <InputText id="username" @bind-Value="UserNameOrEmail" class="form-control" />
+                <ValidationMessage For="@(() => UserNameOrEmail)" />
+            </div>
+
+            <div class="form-group mb-3">
+                <label for="password">Mot de passe</label>
+                <InputText id="password" @bind-Value="Password" class="form-control" type="password" />
+                <ValidationMessage For="@(() => Password)" />
+            </div>
+
+            <div class="form-group mb-3">
+                <div class="form-check">
+                    <InputCheckbox id="rememberMe" @bind-Value="RememberMe" class="form-check-input" />
+                    <label class="form-check-label" for="rememberMe">Se souvenir de moi</label>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" disabled="@IsProcessing">
+                @if (IsProcessing)
+                {
+                    <span>Connexion en cours...</span>
+                }
+                else
+                {
+                    <span>Se connecter</span>
+                }
+            </button>
+        </EditForm>
+
+        <div class="mt-3">
+            <p>Vous n'avez pas de compte? <a href="register">S'inscrire</a></p>
+        </div>
+
+        @if (!string.IsNullOrEmpty(ErrorMessage))
+        {
+            <div class="alert alert-danger mt-3">
+                @ErrorMessage
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private string ErrorMessage { get; set; } = string.Empty;
+    private bool IsProcessing { get; set; } = false;
+    private bool IsSuccess { get; set; } = false;
+
+    [Required(ErrorMessage = "L'email ou le pseudo est requis")]
+    [SupplyParameterFromForm]
+    public string UserNameOrEmail { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Le mot de passe est requis")]
+    [DataType(DataType.Password)]
+    [SupplyParameterFromForm]
+    public string Password { get; set; } = string.Empty;
+
+    [SupplyParameterFromForm]
+    public bool RememberMe { get; set; } = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (IsSuccess)
+        {
+            await Task.Delay(1500);
+            await JSRuntime.InvokeVoidAsync("window.location.href", "/");
+        }
+    }
+
+    private async Task LoginUser()
+    {
+        try
+        {
+            IsProcessing = true;
+            ErrorMessage = string.Empty;
+            IsSuccess = false;
+
+            if (string.IsNullOrEmpty(UserNameOrEmail) || string.IsNullOrEmpty(Password))
+            {
+                ErrorMessage = "Veuillez remplir tous les champs obligatoires.";
+                IsProcessing = false;
+                return;
+            }
+
+            var userByEmail = await UserManager.FindByEmailAsync(UserNameOrEmail);
+            var userByName = await UserManager.FindByNameAsync(UserNameOrEmail);
+
+            var user = userByEmail ?? userByName;
+
+            if (user == null)
+            {
+                ErrorMessage = "Nom d'utilisateur ou mot de passe incorrect.";
+                IsProcessing = false;
+                return;
+            }
+
+            var result = await SignInManager.PasswordSignInAsync(user.UserName, Password, RememberMe, lockoutOnFailure: false);
+
+            if (result.Succeeded)
+            {
+                Logger.LogInformation($"Utilisateur connecté avec succès: {user.UserName}");
+
+                IsSuccess = true;
+
+            }
+            else if (result.IsLockedOut)
+            {
+                Logger.LogWarning($"L'utilisateur {user.UserName} est verrouillé.");
+                ErrorMessage = "Votre compte est verrouillé. Veuillez réessayer plus tard.";
+            }
+            else if (result.RequiresTwoFactor)
+            {
+                Logger.LogInformation($"L'utilisateur {user.UserName} nécessite une authentification à deux facteurs.");
+                ErrorMessage = "L'authentification à deux facteurs est requise mais n'est pas encore prise en charge.";
+            }
+            else
+            {
+                Logger.LogWarning($"Échec de la connexion pour l'utilisateur {user.UserName}");
+                ErrorMessage = "Nom d'utilisateur ou mot de passe incorrect.";
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Exception lors de la connexion");
+            ErrorMessage = $"Une erreur est survenue: {ex.Message}";
+        }
+        finally
+        {
+            IsProcessing = false;
+            StateHasChanged();
+        }
+        NavigationManager.NavigateTo("/");
+
+    }
+}
