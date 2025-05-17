@@ -1,11 +1,11 @@
-﻿using R2.UI.Components;
+﻿using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Server;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using R2.Data.Context;
-using Microsoft.AspNetCore.Identity;
-using R2.Data.Entities;
 using R2.Data.DataSeed;
-using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.AspNetCore.Components.Server;
+using R2.Data.Entities;
+using R2.UI.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString =
@@ -15,8 +15,18 @@ builder.Services.AddHttpClient();
 builder.Services.AddDbContextFactory<R2DbContext>(options =>
     options.UseSqlServer(connectionString));
 
-// Token ANtiForgery pour les requêtes POST (suppression d'un user)
-builder.Services.AddAntiforgery();
+// Configuration Antiforgery
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-CSRF-TOKEN";
+    options.FormFieldName = "__RequestVerificationToken";
+
+    if (builder.Environment.IsDevelopment())
+    {
+        options.SuppressXFrameOptionsHeader = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.None;
+    }
+});
 
 // Configuration d'Identity
 builder.Services.AddDefaultIdentity<User>(options => {
@@ -35,12 +45,12 @@ builder.Services.AddDefaultIdentity<User>(options => {
     options.Lockout.AllowedForNewUsers = true;
 
     // Options de connexion (optionnel)
-    options.SignIn.RequireConfirmedAccount = false; 
+    options.SignIn.RequireConfirmedAccount = false;
 })
     .AddRoles<IdentityRole<int>>()
     .AddEntityFrameworkStores<R2DbContext>()
-    .AddSignInManager()  
-    .AddDefaultTokenProviders();  
+    .AddSignInManager()
+    .AddDefaultTokenProviders();
 
 builder.Services.AddAuthentication(options => {
     options.DefaultScheme = IdentityConstants.ApplicationScheme;
@@ -56,6 +66,9 @@ builder.Services.AddAuthorization(options =>
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<AuthenticationStateProvider, ServerAuthenticationStateProvider>();
+
+// Ajouter le HttpContextAccessor pour permettre aux composants d'accéder à HttpContext
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddQuickGridEntityFrameworkAdapter();
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
@@ -106,13 +119,11 @@ using (var scope = app.Services.CreateScope())
 
             if (result.Succeeded)
             {
-
                 if (!await roleManager.RoleExistsAsync("Super-Administrateur"))
                 {
                     await roleManager.CreateAsync(new IdentityRole<int>("Super-Administrateur"));
                 }
                 var roleResult = await userManager.AddToRoleAsync(testUser, "Super-Administrateur");
-
             }
         }
         else
@@ -150,17 +161,15 @@ else
     app.UseMigrationsEndPoint();
 }
 
-
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-app.UseAntiforgery();
+app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseAntiforgery();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
-
-
 
 app.Run();
