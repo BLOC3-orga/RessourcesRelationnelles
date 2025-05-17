@@ -37,9 +37,12 @@
                             <a href="@($"categories/edit/{category.Id}")" class="btn btn-outline-secondary">
                                 <i class="bi bi-pencil"></i> Modifier
                             </a>
-                            <button class="btn btn-outline-danger" @onclick="() => ConfirmDelete(category)">
+                            @* <button class="btn btn-outline-danger" @onclick="() => ConfirmDelete(category)">
                                 <i class="bi bi-trash"></i> Supprimer
-                            </button>
+                            </button> *@
+                            <a href="@($"categories/delete/{category.Id}")" class="btn btn-outline-danger">
+                                <i class="bi bi-trash"></i> Supprimer
+                            </a>
                         </div>
                     </div>
                 </div>
