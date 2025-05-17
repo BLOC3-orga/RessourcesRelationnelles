@@ -79,6 +79,8 @@
     [SupplyParameterFromForm]
     public bool RememberMe { get; set; } = false;
 
+
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (IsSuccess)
@@ -115,14 +117,19 @@
                 return;
             }
 
+            if (!user.IsAccountActivated)
+            {
+                ErrorMessage = "Impossible de se connecter à ce compte, il est actuellement désactivé.";
+                IsProcessing = false;
+                return;
+            }
+
             var result = await SignInManager.PasswordSignInAsync(user.UserName, Password, RememberMe, lockoutOnFailure: false);
 
             if (result.Succeeded)
             {
                 Logger.LogInformation($"Utilisateur connecté avec succès: {user.UserName}");
-
                 IsSuccess = true;
-
             }
             else if (result.IsLockedOut)
             {
@@ -150,7 +157,10 @@
             IsProcessing = false;
             StateHasChanged();
         }
-        NavigationManager.NavigateTo("/");
 
+        if (IsSuccess)
+        {
+            NavigationManager.NavigateTo("/");
+        }
     }
 }
