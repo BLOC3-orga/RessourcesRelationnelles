@@ -81,34 +81,59 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var userManager = services.GetRequiredService<UserManager<User>>();
-        var testUser = new User
-        {
-            UserName = "test@example.com",
-            Email = "test@example.com",
-            Name = "Test",
-            LastName = "User",
-            Pseudo = "TestUser",
-            City = "Test City",
-            Address = "Test Address"
-        };
+        var roleManager = services.GetRequiredService<RoleManager<IdentityRole<int>>>();
+        var logger = services.GetRequiredService<ILogger<Program>>();
 
-        var result = await userManager.CreateAsync(testUser, "P@ssw0rd123");
-        if (result.Succeeded)
+        var existingUser = await userManager.FindByEmailAsync("admin@example.com");
+
+        if (existingUser == null)
         {
-            var logger = services.GetRequiredService<ILogger<Program>>();
-            logger.LogInformation("Utilisateur de test créé avec succès");
+            var testUser = new User
+            {
+                UserName = "Admin",
+                Email = "admin@example.com",
+                Name = "Admin",
+                LastName = "Admin",
+                Pseudo = "Admin",
+                EmailConfirmed = true,
+                IsAccountActivated = true
+            };
+
+            var result = await userManager.CreateAsync(testUser, "P@ssw0rd123");
+
+            if (result.Succeeded)
+            {
+
+                if (!await roleManager.RoleExistsAsync("Super-Administrateur"))
+                {
+                    await roleManager.CreateAsync(new IdentityRole<int>("Super-Administrateur"));
+                }
+                var roleResult = await userManager.AddToRoleAsync(testUser, "Super-Administrateur");
+
+            }
         }
         else
         {
-            var logger = services.GetRequiredService<ILogger<Program>>();
-            logger.LogWarning("Échec de la création de l'utilisateur de test: {Errors}",
-                string.Join(", ", result.Errors.Select(e => e.Description)));
+            if (!await userManager.IsInRoleAsync(existingUser, "Super-Administrateur"))
+            {
+                var roleResult = await userManager.AddToRoleAsync(existingUser, "Super-Administrateur");
+
+                if (roleResult.Succeeded)
+                {
+                    logger.LogInformation("Rôle Super-Administrateur attribué à l'utilisateur Admin existant");
+                }
+                else
+                {
+                    logger.LogWarning("Échec de l'attribution du rôle Super-Administrateur à l'utilisateur existant: {Errors}",
+                        string.Join(", ", roleResult.Errors.Select(e => e.Description)));
+                }
+            }
         }
     }
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Une erreur s'est produite lors de la création de l'utilisateur de test.");
+        logger.LogError(ex, "Une erreur s'est produite lors de la création/mise à jour de l'utilisateur Admin.");
     }
 }
 
