@@ -52,9 +52,9 @@
                         <div class="form-group mb-3">
                             <label for="status" class="form-label fw-bold">Statut <span class="text-danger">*</span></label>
                             <InputSelect id="status" @bind-Value="Resource.Status" class="form-select">
-                                @foreach (ResourceStatus status in Enum.GetValues(typeof(ResourceStatus)))
+                                @foreach (var status in Enum.GetValues(typeof(ResourceStatus)).Cast<ResourceStatus>().Where(s => s != ResourceStatus.Hanged))
                                 {
-                                    <option value="@status">@GetResourceStatusDisplayName(status)</option>
+                                    <option value="@((int)status)">@GetResourceStatusDisplayName(status)</option>
                                 }
                             </InputSelect>
                             <ValidationMessage For="() => Resource.Status" class="text-danger" />
@@ -132,6 +132,7 @@
             ResourceStatus.Private => "Privé",
             ResourceStatus.Public => "Public",
             ResourceStatus.Draft => "Brouillon",
+            ResourceStatus.Hanged => "Suspendu",
             _ => ""
         };
     }

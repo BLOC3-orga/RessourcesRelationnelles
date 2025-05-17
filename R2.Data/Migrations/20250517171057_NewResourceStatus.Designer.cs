@@ -12,8 +12,8 @@ using R2.Data.Context;
 namespace R2.Data.Migrations
 {
     [DbContext(typeof(R2DbContext))]
-    [Migration("20250517103429_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20250517171057_NewResourceStatus")]
+    partial class NewResourceStatus
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

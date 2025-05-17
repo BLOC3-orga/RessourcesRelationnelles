@@ -31,9 +31,9 @@
                 <label for="statusFilter" class="form-label">Statut</label>
                 <select id="statusFilter" class="form-select" @bind="statusFilter">
                     <option value="-1">Tous</option>
-                    @foreach (var status in Enum.GetValues(typeof(ResourceStatus)))
+                    @foreach (var status in Enum.GetValues(typeof(ResourceStatus)).Cast<ResourceStatus>().Where(s => s != ResourceStatus.Hanged))
                     {
-                        <option value="@((int)status)">@GetStatusDisplayName((ResourceStatus)status)</option>
+                        <option value="@((int)status)">@GetStatusDisplayName(status)</option>
                     }
                 </select>
             </div>
