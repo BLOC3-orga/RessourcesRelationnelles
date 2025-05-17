@@ -4,6 +4,8 @@ using R2.Data.Context;
 using Microsoft.AspNetCore.Identity;
 using R2.Data.Entities;
 using R2.Data.DataSeed;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Server;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString =
@@ -13,17 +15,34 @@ builder.Services.AddHttpClient();
 builder.Services.AddDbContextFactory<R2DbContext>(options =>
     options.UseSqlServer(connectionString));
 
+// Configuration d'Identity
 builder.Services.AddDefaultIdentity<User>(options => {
     options.Password.RequireDigit = true;
     options.Password.RequireLowercase = true;
     options.Password.RequireUppercase = true;
     options.Password.RequireNonAlphanumeric = true;
     options.Password.RequiredLength = 8;
+    options.Password.RequiredUniqueChars = 1;
 
     options.User.RequireUniqueEmail = true;
+
+    // Options de verrouillage de compte (optionnel)
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.Lockout.AllowedForNewUsers = true;
+
+    // Options de connexion (optionnel)
+    options.SignIn.RequireConfirmedAccount = false; 
 })
     .AddRoles<IdentityRole<int>>()
-    .AddEntityFrameworkStores<R2DbContext>();
+    .AddEntityFrameworkStores<R2DbContext>()
+    .AddSignInManager()  
+    .AddDefaultTokenProviders();  
+
+builder.Services.AddAuthentication(options => {
+    options.DefaultScheme = IdentityConstants.ApplicationScheme;
+    options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
+});
 
 builder.Services.AddAuthorization(options =>
 {
@@ -31,6 +50,9 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("RequireSuperAdminRole", policy => policy.RequireRole("Super-Administrateur"));
     options.AddPolicy("RequireModeratorRole", policy => policy.RequireRole("Modérateur", "Administrateur", "Super-Administrateur"));
 });
+
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddScoped<AuthenticationStateProvider, ServerAuthenticationStateProvider>();
 
 builder.Services.AddQuickGridEntityFrameworkAdapter();
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
@@ -53,17 +75,53 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var userManager = services.GetRequiredService<UserManager<User>>();
+        var testUser = new User
+        {
+            UserName = "test@example.com",
+            Email = "test@example.com",
+            Name = "Test",
+            LastName = "User",
+            Pseudo = "TestUser",
+            City = "Test City",
+            Address = "Test Address"
+        };
+
+        var result = await userManager.CreateAsync(testUser, "P@ssw0rd123");
+        if (result.Succeeded)
+        {
+            var logger = services.GetRequiredService<ILogger<Program>>();
+            logger.LogInformation("Utilisateur de test créé avec succès");
+        }
+        else
+        {
+            var logger = services.GetRequiredService<ILogger<Program>>();
+            logger.LogWarning("Échec de la création de l'utilisateur de test: {Errors}",
+                string.Join(", ", result.Errors.Select(e => e.Description)));
+        }
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Une erreur s'est produite lors de la création de l'utilisateur de test.");
+    }
+}
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
-    app.UseMigrationsEndPoint();
 }
 else
 {
     app.UseMigrationsEndPoint();
 }
+
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
@@ -74,5 +132,7 @@ app.UseAuthorization();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+
 
 app.Run();

@@ -1,0 +1,29 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+@using R2.Data.Entities
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject SignInManager<User> SignInManager
+@inject NavigationManager NavigationManager
+
+<AuthorizeView>
+    <Authorized>
+        <div class="user-info">
+            Bonjour, @context.User.Identity?.Name!
+            <a href="/logout" class="ml-3">Déconnexion</a>
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <a href="/register">S'inscrire</a>
+        <a href="/login" class="ml-3">Se connecter</a>
+    </NotAuthorized>
+</AuthorizeView>
+
+<style>
+    .user-info {
+        display: inline-block;
+    }
+
+    .ml-3 {
+        margin-left: 1rem;
+    }
+</style>
