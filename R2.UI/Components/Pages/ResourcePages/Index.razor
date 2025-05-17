@@ -5,214 +5,316 @@
 @using R2.Data.Entities
 @using R2.Data.Context
 @using R2.Data.Enums
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Linq.Expressions
 @implements IAsyncDisposable
 @inject IDbContextFactory<R2.Data.Context.R2DbContext> DbFactory
 @inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @rendermode InteractiveServer
 
 <PageTitle>Ressources</PageTitle>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>Ressources</h1>
-    <div>
-        <a href="resources/create" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Créer une nouvelle ressource
-        </a>
-    </div>
-</div>
-
-@* FILTRES *@
-<div class="card mb-4">
-    <div class="card-header bg-light">
-        <h5 class="mb-0">Filtres</h5>
-    </div>
-    <div class="card-body">
-        <div class="row g-3">
-            <div class="col-md-3">
-                <label for="statusFilter" class="form-label">Statut</label>
-                <select id="statusFilter" class="form-select" @bind="statusFilter">
-                    <option value="-1">Tous</option>
-                    @foreach (var status in Enum.GetValues(typeof(ResourceStatus)).Cast<ResourceStatus>().Where(s => s != ResourceStatus.Hanged))
-                    {
-                        <option value="@((int)status)">@GetStatusDisplayName(status)</option>
-                    }
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label for="typeFilter" class="form-label">Type</label>
-                <select id="typeFilter" class="form-select" @bind="typeFilter">
-                    <option value="-1">Tous</option>
-                    @foreach (var type in Enum.GetValues(typeof(ResourceType)))
-                    {
-                        <option value="@((int)type)">@GetTypeDisplayName((ResourceType)type)</option>
-                    }
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label for="categoryFilter" class="form-label">Catégorie</label>
-                <select id="categoryFilter" class="form-select" @bind="categoryFilter">
-                    <option value="-1">Toutes</option>
-                    @if (categories != null)
-                    {
-                        @foreach (var category in categories)
-                        {
-                            <option value="@category.Id">@category.Name</option>
-                        }
-                    }
-                </select>
-            </div>
-            <div class="col-md-3 d-flex align-items-end">
-                <button class="btn btn-outline-primary me-2" @onclick="ApplyFilters">
-                    <i class="bi bi-funnel"></i> Appliquer
-                </button>
-                <button class="btn btn-outline-secondary" @onclick="ResetFilters">
-                    <i class="bi bi-x-circle"></i> Réinitialiser
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-@*RESSOURCES*@
-@if (filteredResources == null)
-{
-    <div class="d-flex justify-content-center">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Chargement...</span>
-        </div>
-    </div>
-}
-else if (!filteredResources.Any())
-{
-    <div class="alert alert-info">
-        <i class="bi bi-info-circle me-2"></i> Aucune ressource ne correspond aux critères de recherche.
-    </div>
-}
-else
-{
-    <div class="row row-cols-1 row-cols-md-3 g-4 mb-4">
-        @foreach (var resource in filteredResources)
-        {
-            <div class="col">
-                <div class="card h-100 shadow-sm">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <span class="badge @GetStatusBadgeClass(resource.Status)">
-                            @GetStatusDisplayName(resource.Status)
-                        </span>
-                        <span class="badge bg-primary">
-                            @GetTypeDisplayName(resource.Type)
-                        </span>
-                    </div>
-                    <div class="card-body">
-                        <h5 class="card-title">@resource.Name</h5>
-                        <p class="card-text text-truncate">@resource.Description</p>
-                        <div class="d-flex justify-content-between small text-muted mb-2">
-                            <span><i class="bi bi-calendar3"></i> @resource.CreationDate.ToString("dd/MM/yyyy")</span>
-                            <span><i class="bi bi-tag"></i> @(resource.Category?.Name ?? "Sans catégorie")</span>
-                        </div>
-                    </div>
-                    <div class="card-footer bg-transparent">
-                        <div class="btn-group btn-group-sm w-100">
-                            <a href="@($"resources/details?id={resource.Id}")" class="btn btn-outline-primary">
-                                <i class="bi bi-eye"></i> Voir
-                            </a>
-                            <a href="@($"resources/edit?id={resource.Id}")" class="btn btn-outline-secondary">
-                                <i class="bi bi-pencil"></i> Modifier
-                            </a>
-                            <a href="@($"resources/delete/{resource.Id}")" class="btn btn-outline-danger">
-                                <i class="bi bi-trash"></i> Supprimer
-                            </a>
-                        </div>
-                        <div class="btn-group btn-group-sm w-100 mt-2">
-                            <button class="btn btn-outline-success" @onclick="() => AddToFavorites(resource)">
-                                <i class="bi bi-star"></i> Favoris
-                            </button>
-                            <button class="btn btn-outline-info" @onclick="() => MarkAsExploited(resource)">
-                                <i class="bi bi-check-circle"></i> Exploitée
-                            </button>
-                            <button class="btn btn-outline-warning" @onclick="() => ShareResource(resource)">
-                                <i class="bi bi-share"></i> Partager
-                            </button>
-                        </div>
-                    </div>
+<div class="container-fluid px-0">
+    <AuthorizeView>
+        <Authorized>
+            <!-- Affichage pour les utilisateurs authentifiés -->
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+                <h1 class="mb-0">Ressources</h1>
+                <div>
+                    <a href="resources/create" class="btn btn-primary w-100 w-md-auto">
+                        <i class="bi bi-plus-circle"></i> Créer une nouvelle ressource
+                    </a>
                 </div>
             </div>
-        }
-    </div>
-}
 
-@if (showDeleteModal)
-{
-    <div class="modal fade show" style="display: block;" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title">
-                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                        Confirmer la suppression
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" @onclick="CancelDelete"></button>
+            @* FILTRES et TRI *@
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Filtres et tri</h5>
                 </div>
-                <div class="modal-body">
-                    @if (isDeleting)
-                    {
-                        <div class="text-center py-4">
-                            <div class="spinner-border text-danger" role="status">
-                                <span class="visually-hidden">Suppression en cours...</span>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <!-- Filtres existants -->
+                        <div class="col-md-6 col-lg-3">
+                            <label for="statusFilter" class="form-label">Statut</label>
+                            <select id="statusFilter" class="form-select" @bind="statusFilter">
+                                <option value="-1">Tous</option>
+                                @foreach (var status in Enum.GetValues(typeof(ResourceStatus)).Cast<ResourceStatus>().Where(s => s != ResourceStatus.Hanged))
+                                {
+                                    <option value="@((int)status)">@GetStatusDisplayName(status)</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <label for="typeFilter" class="form-label">Type</label>
+                            <select id="typeFilter" class="form-select" @bind="typeFilter">
+                                <option value="-1">Tous</option>
+                                @foreach (var type in Enum.GetValues(typeof(ResourceType)))
+                                {
+                                    <option value="@((int)type)">@GetTypeDisplayName((ResourceType)type)</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <label for="categoryFilter" class="form-label">Catégorie</label>
+                            <select id="categoryFilter" class="form-select" @bind="categoryFilter">
+                                <option value="-1">Toutes</option>
+                                @if (categories != null)
+                                {
+                                    @foreach (var category in categories)
+                                    {
+                                        <option value="@category.Id">@category.Name</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6 col-lg-3 d-flex align-items-end">
+                            <div class="d-flex gap-2 w-100">
+                                <button class="btn btn-outline-primary flex-grow-1" @onclick="ApplyFilters">
+                                    <i class="bi bi-funnel"></i> <span class="d-none d-sm-inline">Appliquer</span>
+                                </button>
+                                <button class="btn btn-outline-secondary flex-grow-1" @onclick="ResetFilters">
+                                    <i class="bi bi-x-circle"></i> <span class="d-none d-sm-inline">Réinitialiser</span>
+                                </button>
                             </div>
-                            <p class="mt-2">Suppression en cours...</p>
                         </div>
-                    }
-                    else
-                    {
-                        <div class="mb-3">
-                            <p>Êtes-vous sûr de vouloir supprimer la ressource <strong>"@resourceToDelete?.Name"</strong> ?</p>
+                    </div>
 
-                            @if (relatedItemsCount > 0)
-                            {
-                                <div class="alert alert-warning">
-                                    <i class="bi bi-exclamation-triangle me-2"></i>
-                                    <strong>Attention :</strong> Cette ressource est utilisée dans @relatedItemsCount élément(s).
-                                    La suppression affectera tous ces éléments liés.
-                                </div>
-                            }
+                    <!-- Options de tri -->
+                    <div class="row mt-3">
+                        <div class="col-md-8">
+                            <label for="sortBy" class="form-label">Trier par</label>
+                            <select id="sortBy" class="form-select" @bind="sortByOption">
+                                <option value="0">Nom (A-Z)</option>
+                                <option value="1">Nom (Z-A)</option>
+                                <option value="2">Date (Plus récente)</option>
+                                <option value="3">Date (Plus ancienne)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button class="btn btn-outline-primary w-100 mt-3 mt-md-0" @onclick="ApplySorting">
+                                <i class="bi bi-sort-alpha-down"></i> Trier
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </Authorized>
+        <NotAuthorized>
+            <!-- Affichage pour les utilisateurs non authentifiés -->
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+                <h1 class="mb-0">Ressources</h1>
+                <div>
+                    <a href="login" class="btn btn-primary w-100 w-md-auto">
+                        <i class="bi bi-box-arrow-in-right"></i> Se connecter
+                    </a>
+                </div>
+            </div>
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i> Connectez-vous pour voir toutes les ressources et avoir accès à des fonctionnalités supplémentaires.
+            </div>
 
-                            <p class="text-danger">
-                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                                Cette action est irréversible.
+            <!-- Options de tri pour les utilisateurs non authentifiés -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Tri</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <label for="sortByPublic" class="form-label">Trier par</label>
+                            <select id="sortByPublic" class="form-select" @bind="sortByOption">
+                                <option value="0">Nom (A-Z)</option>
+                                <option value="1">Nom (Z-A)</option>
+                                <option value="2">Date (Plus récente)</option>
+                                <option value="3">Date (Plus ancienne)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button class="btn btn-outline-primary w-100 mt-3 mt-md-0" @onclick="ApplySorting">
+                                <i class="bi bi-sort-alpha-down"></i> Trier
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </NotAuthorized>
+    </AuthorizeView>
+
+    @*RESSOURCES*@
+    @if (filteredResources == null)
+    {
+        <div class="d-flex justify-content-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Chargement...</span>
+            </div>
+        </div>
+    }
+    else if (!filteredResources.Any())
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i> Aucune ressource ne correspond aux critères de recherche.
+        </div>
+    }
+    else
+    {
+        <!-- Affichage du tri actuel -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
+            <div class="text-muted small">
+                <i class="bi bi-sort"></i> Tri actuel : @GetSortOptionDisplayName()
+            </div>
+            <div class="text-muted small">
+                @filteredResources.Count ressource(s)
+            </div>
+        </div>
+
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-4">
+            @foreach (var resource in filteredResources)
+            {
+                <div class="col">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span class="badge @GetStatusBadgeClass(resource.Status)">
+                                @GetStatusDisplayName(resource.Status)
+                            </span>
+                            <span class="badge bg-primary">
+                                @GetTypeDisplayName(resource.Type)
+                            </span>
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title text-truncate">@resource.Name</h5>
+                            <p class="card-text mb-auto overflow-hidden" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; max-height: 3em;">
+                                @resource.Description
                             </p>
+                            <div class="d-flex justify-content-between small text-muted mt-2">
+                                <span title="@resource.CreationDate.ToString("dd/MM/yyyy HH:mm")">
+                                    <i class="bi bi-calendar3"></i> 
+                                    <span class="d-none d-sm-inline">@resource.CreationDate.ToString("dd/MM/yyyy HH:mm")</span>
+                                    <span class="d-inline d-sm-none">@resource.CreationDate.ToString("dd/MM/yy")</span>
+                                </span>
+                                <span><i class="bi bi-tag"></i> 
+                                    <span class="text-truncate d-inline-block" style="max-width: 100px;">@(resource.Category?.Name ?? "Sans catégorie")</span>
+                                </span>
+                            </div>
                         </div>
-                    }
+                        <div class="card-footer bg-transparent">
+                            <AuthorizeView>
+                                <Authorized>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        <a href="@($"resources/details?id={resource.Id}")" class="btn btn-sm btn-outline-primary flex-grow-1">
+                                            <i class="bi bi-eye"></i> <span class="d-none d-md-inline">Voir</span>
+                                        </a>
+                                        <a href="@($"resources/edit?id={resource.Id}")" class="btn btn-sm btn-outline-secondary flex-grow-1">
+                                            <i class="bi bi-pencil"></i> <span class="d-none d-md-inline">Modifier</span>
+                                        </a>
+                                        <a href="@($"resources/delete/{resource.Id}")" class="btn btn-sm btn-outline-danger flex-grow-1">
+                                            <i class="bi bi-trash"></i> <span class="d-none d-md-inline">Supprimer</span>
+                                        </a>
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-1 mt-2">
+                                        <button class="btn btn-sm btn-outline-success flex-grow-1" @onclick="() => AddToFavorites(resource)">
+                                            <i class="bi bi-star"></i> <span class="d-none d-md-inline">Favoris</span>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-info flex-grow-1" @onclick="() => MarkAsExploited(resource)">
+                                            <i class="bi bi-check-circle"></i> <span class="d-none d-md-inline">Exploitée</span>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-warning flex-grow-1" @onclick="() => ShareResource(resource)">
+                                            <i class="bi bi-share"></i> <span class="d-none d-md-inline">Partager</span>
+                                        </button>
+                                    </div>
+                                </Authorized>
+                                <NotAuthorized>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        <a href="@($"resources/details?id={resource.Id}")" class="btn btn-sm btn-outline-primary flex-grow-1">
+                                            <i class="bi bi-eye"></i> Voir
+                                        </a>
+                                        <a href="login" class="btn btn-sm btn-outline-secondary flex-grow-1">
+                                            <i class="bi bi-box-arrow-in-right"></i> Connecter
+                                        </a>
+                                    </div>
+                                </NotAuthorized>
+                            </AuthorizeView>
+                        </div>
+                    </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" @onclick="CancelDelete" disabled="@isDeleting">
-                        Annuler
-                    </button>
-                    <button type="button" class="btn btn-danger" @onclick="DeleteResource" disabled="@isDeleting">
-                        <i class="bi bi-trash me-1"></i> Supprimer définitivement
-                    </button>
-                </div>
-            </div>
+            }
         </div>
-    </div>
-    <div class="modal-backdrop fade show"></div>
-}
+    }
 
-@if (showDeletedToast)
-{
-    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 5">
-        <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="toast-header bg-success text-white">
-                <i class="bi bi-check-circle me-2"></i>
-                <strong class="me-auto">Suppression réussie</strong>
-                <button type="button" class="btn-close btn-close-white" @onclick="() => showDeletedToast = false"></button>
-            </div>
-            <div class="toast-body">
-                La ressource a été supprimée avec succès.
+    @if (showDeleteModal)
+    {
+        <div class="modal fade show" style="display: block;" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            Confirmer la suppression
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" @onclick="CancelDelete"></button>
+                    </div>
+                    <div class="modal-body">
+                        @if (isDeleting)
+                        {
+                            <div class="text-center py-4">
+                                <div class="spinner-border text-danger" role="status">
+                                    <span class="visually-hidden">Suppression en cours...</span>
+                                </div>
+                                <p class="mt-2">Suppression en cours...</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="mb-3">
+                                <p>Êtes-vous sûr de vouloir supprimer la ressource <strong>"@resourceToDelete?.Name"</strong> ?</p>
+
+                                @if (relatedItemsCount > 0)
+                                {
+                                    <div class="alert alert-warning">
+                                        <i class="bi bi-exclamation-triangle me-2"></i>
+                                        <strong>Attention :</strong> Cette ressource est utilisée dans @relatedItemsCount élément(s).
+                                        La suppression affectera tous ces éléments liés.
+                                    </div>
+                                }
+
+                                <p class="text-danger">
+                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                    Cette action est irréversible.
+                                </p>
+                            </div>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CancelDelete" disabled="@isDeleting">
+                            Annuler
+                        </button>
+                        <button type="button" class="btn btn-danger" @onclick="DeleteResource" disabled="@isDeleting">
+                            <i class="bi bi-trash me-1"></i> Supprimer définitivement
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-}
+        <div class="modal-backdrop fade show"></div>
+    }
+
+    @if (showDeletedToast)
+    {
+        <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 5">
+            <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="toast-header bg-success text-white">
+                    <i class="bi bi-check-circle me-2"></i>
+                    <strong class="me-auto">Suppression réussie</strong>
+                    <button type="button" class="btn-close btn-close-white" @onclick="() => showDeletedToast = false"></button>
+                </div>
+                <div class="toast-body">
+                    La ressource a été supprimée avec succès.
+                </div>
+            </div>
+        </div>
+    }
+</div>
 
 @code {
     private R2DbContext context = default!;
@@ -227,10 +329,19 @@ else
     private bool isDeleting = false;
     private Resource resourceToDelete;
     private int relatedItemsCount = 0;
+    private bool isAuthenticated = false;
+
+    // Options de tri: 0=Nom A-Z, 1=Nom Z-A, 2=Date récente, 3=Date ancienne
+    private int sortByOption = 0;
 
     protected override async Task OnInitializedAsync()
     {
         context = DbFactory.CreateDbContext();
+
+        // Vérifier si l'utilisateur est authentifié
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        isAuthenticated = authState.User.Identity?.IsAuthenticated ?? false;
+
         await LoadData();
     }
 
@@ -238,13 +349,25 @@ else
     {
         try
         {
-            allResources = await context.Ressources
-                .Include(r => r.Category)
-                .ToListAsync();
+            // Si l'utilisateur n'est pas authentifié, charger uniquement les ressources publiques
+            if (!isAuthenticated)
+            {
+                allResources = await context.Ressources
+                    .Include(r => r.Category)
+                    .Where(r => r.Status == ResourceStatus.Public)
+                    .ToListAsync();
+            }
+            else
+            {
+                allResources = await context.Ressources
+                    .Include(r => r.Category)
+                    .ToListAsync();
+            }
 
             categories = await context.Categories.ToListAsync();
 
             ApplyFilters();
+            ApplySorting();
         }
         catch (Exception ex)
         {
@@ -269,6 +392,14 @@ else
                     .ToList();
             }
 
+            // Si l'utilisateur n'est pas authentifié, on s'assure toujours de n'avoir que des ressources publiques
+            if (!isAuthenticated)
+            {
+                filteredResources = filteredResources
+                    .Where(r => r.Status == ResourceStatus.Public)
+                    .ToList();
+            }
+
             if (typeFilter != -1)
             {
                 filteredResources = filteredResources
@@ -283,6 +414,9 @@ else
                     .ToList();
             }
 
+            // Appliquer également le tri actuel
+            ApplySorting();
+
             // Forcer le rafraîchissement de l'interface
             StateHasChanged();
         }
@@ -290,6 +424,50 @@ else
         {
             Console.Error.WriteLine($"Erreur lors de l'application des filtres : {ex.Message}");
         }
+    }
+
+    private void ApplySorting()
+    {
+        try
+        {
+            // Appliquer le tri selon l'option choisie
+            switch (sortByOption)
+            {
+                case 0: // Nom A-Z
+                    filteredResources = filteredResources.OrderBy(r => r.Name).ToList();
+                    break;
+                case 1: // Nom Z-A
+                    filteredResources = filteredResources.OrderByDescending(r => r.Name).ToList();
+                    break;
+                case 2: // Date (Plus récente)
+                    filteredResources = filteredResources.OrderByDescending(r => r.CreationDate).ToList();
+                    break;
+                case 3: // Date (Plus ancienne)
+                    filteredResources = filteredResources.OrderBy(r => r.CreationDate).ToList();
+                    break;
+                default:
+                    filteredResources = filteredResources.OrderBy(r => r.Name).ToList();
+                    break;
+            }
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Erreur lors de l'application du tri : {ex.Message}");
+        }
+    }
+
+    private string GetSortOptionDisplayName()
+    {
+        return sortByOption switch
+        {
+            0 => "Nom (A-Z)",
+            1 => "Nom (Z-A)",
+            2 => "Date (Plus récente)",
+            3 => "Date (Plus ancienne)",
+            _ => "Nom (A-Z)"
+        };
     }
 
     private void ResetFilters()
