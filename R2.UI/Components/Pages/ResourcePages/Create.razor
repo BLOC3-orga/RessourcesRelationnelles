@@ -2,13 +2,8 @@
 @using Microsoft.EntityFrameworkCore
 @using R2.Data.Entities
 @using R2.Data.Enums
-@using Microsoft.AspNetCore.Antiforgery
-@using Microsoft.AspNetCore.Http
 @inject IDbContextFactory<R2.Data.Context.R2DbContext> DbFactory
 @inject NavigationManager NavigationManager
-@inject IAntiforgery Antiforgery
-@inject IHttpContextAccessor HttpContextAccessor
-@rendermode InteractiveServer
 
 <PageTitle>Créer une ressource</PageTitle>
 
@@ -17,14 +12,8 @@
         <div class="card-header bg-primary text-white">
             <h2 class="mb-0">Créer une nouvelle ressource</h2>
         </div>
-
         <div class="card-body">
             <EditForm method="post" Model="Resource" OnValidSubmit="AddResource" FormName="create" Enhance>
-                @if (HttpContextAccessor.HttpContext != null)
-                {
-                    <input type="hidden" name="__RequestVerificationToken" value="@Antiforgery.GetAndStoreTokens(HttpContextAccessor.HttpContext).RequestToken" />
-                }
-
                 <DataAnnotationsValidator />
                 <ValidationSummary class="alert alert-danger" role="alert" />
 
@@ -122,12 +111,6 @@
 
         if (Resource.Type == 0)
             Resource.Type = ResourceType.Activity;
-
-        // Générer les tokens antiforgery explicitement si le contexte HTTP est disponible
-        if (HttpContextAccessor.HttpContext != null)
-        {
-            Antiforgery.GetAndStoreTokens(HttpContextAccessor.HttpContext);
-        }
     }
 
     private string GetResourceTypeDisplayName(ResourceType type)
