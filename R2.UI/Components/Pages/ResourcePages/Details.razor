@@ -32,34 +32,6 @@ else
                         <p class="lead">@resource.Description</p>
                     </div>
 
-                    <!-- Contenu de la ressource -->
-                    <div class="mb-4">
-                        <h4>Contenu</h4>
-                        <div class="p-3 bg-light rounded">
-                            @if (resource.Type == ResourceType.Document)
-                            {
-                                <div class="document-preview">
-                                    <p><em>Aperçu du document</em></p>
-                                    <!-- Intégrer ici la visualisation du document -->
-                                </div>
-                            }
-                            else if (resource.Type == ResourceType.Activity)
-                            {
-                                <div class="activity-details">
-                                    <p><em>Détails de l'activité</em></p>
-                                    <!-- Intégrer ici les détails spécifiques à une activité -->
-                                </div>
-                            }
-                            else if (resource.Type == ResourceType.Game)
-                            {
-                                <div class="game-details">
-                                    <p><em>Détails du jeu</em></p>
-                                    <!-- Intégrer ici les détails spécifiques à un jeu -->
-                                </div>
-                            }
-                        </div>
-                    </div>
-
                     <!-- Section commentaires -->
                     <div class="mb-4">
                         <h4>Commentaires</h4>

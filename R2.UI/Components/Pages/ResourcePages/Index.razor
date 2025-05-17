@@ -8,6 +8,7 @@
 @implements IAsyncDisposable
 @inject IDbContextFactory<R2.Data.Context.R2DbContext> DbFactory
 @inject NavigationManager NavigationManager
+@rendermode InteractiveServer
 
 <PageTitle>Ressources</PageTitle>
 
@@ -215,9 +216,9 @@ else
 
 @code {
     private R2DbContext context = default!;
-    private List<Resource> allResources;
-    private List<Resource> filteredResources;
-    private List<Category> categories;
+    private List<Resource> allResources = new List<Resource>();
+    private List<Resource> filteredResources = new List<Resource>();
+    private List<Category> categories = new List<Category>();
     private int statusFilter = -1;
     private int typeFilter = -1;
     private int categoryFilter = -1;
@@ -235,38 +236,59 @@ else
 
     private async Task LoadData()
     {
-        allResources = await context.Ressources
-            .Include(r => r.Category)
-            .ToListAsync();
+        try
+        {
+            allResources = await context.Ressources
+                .Include(r => r.Category)
+                .ToListAsync();
 
-        categories = await context.Categories.ToListAsync();
+            categories = await context.Categories.ToListAsync();
 
-        ApplyFilters();
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Erreur lors du chargement des données : {ex.Message}");
+            // Initialiser avec des listes vides en cas d'erreur
+            allResources = new List<Resource>();
+            categories = new List<Category>();
+            filteredResources = new List<Resource>();
+        }
     }
 
     private void ApplyFilters()
     {
-        filteredResources = allResources;
-
-        if (statusFilter != -1)
+        try
         {
-            filteredResources = filteredResources
-                .Where(r => (int)r.Status == statusFilter)
-                .ToList();
+            filteredResources = new List<Resource>(allResources);
+
+            if (statusFilter != -1)
+            {
+                filteredResources = filteredResources
+                    .Where(r => (int)r.Status == statusFilter)
+                    .ToList();
+            }
+
+            if (typeFilter != -1)
+            {
+                filteredResources = filteredResources
+                    .Where(r => (int)r.Type == typeFilter)
+                    .ToList();
+            }
+
+            if (categoryFilter != -1)
+            {
+                filteredResources = filteredResources
+                    .Where(r => r.CategoryId == categoryFilter)
+                    .ToList();
+            }
+
+            // Forcer le rafraîchissement de l'interface
+            StateHasChanged();
         }
-
-        if (typeFilter != -1)
+        catch (Exception ex)
         {
-            filteredResources = filteredResources
-                .Where(r => (int)r.Type == typeFilter)
-                .ToList();
-        }
-
-        if (categoryFilter != -1)
-        {
-            filteredResources = filteredResources
-                .Where(r => r.CategoryId == categoryFilter)
-                .ToList();
+            Console.Error.WriteLine($"Erreur lors de l'application des filtres : {ex.Message}");
         }
     }
 
@@ -278,10 +300,9 @@ else
         ApplyFilters();
     }
 
-    private async Task ConfirmDelete(Resource resource)
+    private void ConfirmDelete(Resource resource)
     {
         resourceToDelete = resource;
-
         showDeleteModal = true;
     }
 
@@ -292,9 +313,7 @@ else
             try
             {
                 isDeleting = true;
-
-                // Supprimer les relations (si nécessaire)
-                // await DeleteRelatedItems(resourceToDelete.Id);
+                StateHasChanged();
 
                 // Supprimer la ressource
                 context.Ressources.Remove(resourceToDelete);
@@ -318,7 +337,6 @@ else
             }
             catch (Exception ex)
             {
-                // Gérer l'erreur (vous pourriez ajouter un message d'erreur à afficher)
                 Console.Error.WriteLine($"Erreur lors de la suppression : {ex.Message}");
             }
             finally
@@ -326,6 +344,7 @@ else
                 isDeleting = false;
                 showDeleteModal = false;
                 resourceToDelete = null;
+                StateHasChanged();
             }
         }
     }
