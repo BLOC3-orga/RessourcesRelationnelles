@@ -1,4 +1,4 @@
-﻿@page "/resources/create"
+@page "/resources/create"
 @using Microsoft.EntityFrameworkCore
 @using R2.Data.Entities
 @using R2.Data.Enums
@@ -96,10 +96,9 @@
 </div>
 
 @code {
-    [SupplyParameterFromForm]
     private Resource Resource { get; set; } = new();  // Ne pas définir CreationDate ici
 
-    private List<Category>? Categories { get; set; }
+    internal List<Category>? Categories { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -114,7 +113,7 @@
             Resource.Type = ResourceType.Activity;
     }
 
-    private string GetResourceTypeDisplayName(ResourceType type)
+    internal string GetResourceTypeDisplayName(ResourceType type)
     {
         return type switch
         {
@@ -125,7 +124,7 @@
         };
     }
 
-    private string GetResourceStatusDisplayName(ResourceStatus status)
+    internal string GetResourceStatusDisplayName(ResourceStatus status)
     {
         return status switch
         {
@@ -137,7 +136,7 @@
         };
     }
 
-    private async Task AddResource()
+    internal async Task AddResource()
     {
         using var context = DbFactory.CreateDbContext();
 
