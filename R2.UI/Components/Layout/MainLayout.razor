@@ -1,79 +1,30 @@
 ﻿@inherits LayoutComponentBase
 
 <div class="page">
-    <div class="sidebar">
+    <!-- Menu latéral (visible uniquement sur desktop) -->
+    <div class="sidebar d-none d-md-block">
         <NavMenu />
     </div>
+
     <main class="main">
-        <div class="top-row px-4">
+        <!-- Barre supérieure (visible uniquement sur desktop) -->
+        <div class="top-row px-4 d-none d-md-flex">
             <LoginDisplay />
         </div>
+        
         <article class="content px-4">
             @Body
         </article>
     </main>
+
+    <!-- Menu mobile horizontal en bas (visible uniquement sur mobile) -->
+    <div class="mobile-navbar d-md-none">
+        <NavMenuMobile />
+    </div>
 </div>
 
 <div id="blazor-error-ui">
-    An unhandled error has occurred.
-    <a href="" class="reload">Reload</a>
+    Une erreur non gérée s'est produite.
+    <a href="" class="reload">Recharger</a>
     <a class="dismiss">🗙</a>
 </div>
-
-<style>
-    .page {
-        display: flex;
-        width: 100%;
-        height: 100vh;
-        overflow: hidden;
-    }
-
-    .sidebar {
-        width: 250px;
-        min-width: 250px;
-        height: 100%;
-        background-color: #f8f9fa;
-        border-right: 1px solid #dee2e6;
-        overflow-y: auto;
-    }
-
-    .main {
-        flex: 1;
-        height: 100%;
-        overflow-y: auto;
-        position: relative;
-    }
-
-    .top-row {
-        background-color: #f7f7f7;
-        border-bottom: 1px solid #d6d5d5;
-        justify-content: flex-end;
-        height: 3.5rem;
-        display: flex;
-        align-items: center;
-        padding: 0 1.5rem;
-    }
-
-    .content {
-        width: 100%;
-        max-width: 100%;
-        padding-bottom: 2rem;
-    }
-
-    #blazor-error-ui {
-        position: fixed;
-        bottom: 0;
-        width: 100%;
-        z-index: 1000;
-        background-color: #ffffe0;
-        padding: 0.6rem;
-        display: none;
-    }
-
-    #blazor-error-ui .dismiss {
-        cursor: pointer;
-        position: absolute;
-        right: 0.75rem;
-        top: 0.5rem;
-    }
-</style>
