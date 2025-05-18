@@ -124,10 +124,10 @@
                     <div class="row">
                         <div class="col-md-8">
                             <label for="sortByPublic" class="form-label">Trier par</label>
-                            <select id="sortByPublic" class="form-select" @bind="sortByOption">
+                            <select id="sortBy" class="form-select" @bind="sortByOption">
                                 <option value="0">Nom (A-Z)</option>
                                 <option value="1">Nom (Z-A)</option>
-                                <option value="2">Date (Plus récente)</option>
+                                <option value="2" selected>Date (Plus récente)</option>
                                 <option value="3">Date (Plus ancienne)</option>
                             </select>
                         </div>
@@ -203,7 +203,7 @@
                                 <Authorized>
                                     <div class="d-flex flex-wrap gap-1">
                                         <a href="@($"resources/details?id={resource.Id}")" class="btn btn-sm btn-outline-primary flex-grow-1">
-                                            <i class="bi bi-eye"></i> <span class="d-none d-md-inline">Voir</span>
+                                            <i class="bi bi-eye"></i> <span class="d-none d-md-inline">Afficher</span>
                                         </a>
                                         <a href="@($"resources/edit?id={resource.Id}")" class="btn btn-sm btn-outline-secondary flex-grow-1">
                                             <i class="bi bi-pencil"></i> <span class="d-none d-md-inline">Modifier</span>
@@ -227,10 +227,7 @@
                                 <NotAuthorized>
                                     <div class="d-flex flex-wrap gap-1">
                                         <a href="@($"resources/details?id={resource.Id}")" class="btn btn-sm btn-outline-primary flex-grow-1">
-                                            <i class="bi bi-eye"></i> Voir
-                                        </a>
-                                        <a href="login" class="btn btn-sm btn-outline-secondary flex-grow-1">
-                                            <i class="bi bi-box-arrow-in-right"></i> Connecter
+                                            <i class="bi bi-eye"></i> Afficher
                                         </a>
                                     </div>
                                 </NotAuthorized>
@@ -332,7 +329,7 @@
     private bool isAuthenticated = false;
 
     // Options de tri: 0=Nom A-Z, 1=Nom Z-A, 2=Date récente, 3=Date ancienne
-    private int sortByOption = 0;
+    private int sortByOption = 2; 
 
     protected override async Task OnInitializedAsync()
     {
@@ -446,10 +443,10 @@
                     filteredResources = filteredResources.OrderBy(r => r.CreationDate).ToList();
                     break;
                 default:
-                    filteredResources = filteredResources.OrderBy(r => r.Name).ToList();
+                    // Modifier le comportement par défaut pour utiliser le tri par date décroissante
+                    filteredResources = filteredResources.OrderByDescending(r => r.CreationDate).ToList();
                     break;
             }
-
             StateHasChanged();
         }
         catch (Exception ex)
@@ -457,7 +454,6 @@
             Console.Error.WriteLine($"Erreur lors de l'application du tri : {ex.Message}");
         }
     }
-
     private string GetSortOptionDisplayName()
     {
         return sortByOption switch
