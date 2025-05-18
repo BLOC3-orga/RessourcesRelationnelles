@@ -199,10 +199,21 @@
                             </div>
                         </div>
                         <div class="card-footer bg-transparent">
-                            <AuthorizeView>
+
+                            <AuthorizeView Roles="Citoyen">
                                 <Authorized>
                                     <div class="d-flex flex-wrap gap-1">
                                         <a href="@($"resources/details?id={resource.Id}")" class="btn btn-sm btn-primary flex-grow-1">
+                                            <i class="bi bi-eye"></i> <span class="d-none d-md-inline">Afficher</span>
+                                        </a>
+                                    </div>
+                                </Authorized>
+                            </AuthorizeView>
+
+                            <AuthorizeView Roles="Administrateur,Super-Administrateur">
+                                <Authorized>
+                                    <div class="d-flex flex-wrap gap-1">
+                                         <a href="@($"resources/details?id={resource.Id}")" class="btn btn-sm btn-primary flex-grow-1">
                                             <i class="bi bi-eye"></i> <span class="d-none d-md-inline">Afficher</span>
                                         </a>
                                         <a href="@($"resources/edit?id={resource.Id}")" class="btn btn-sm btn-secondary flex-grow-1">
@@ -212,6 +223,11 @@
                                             <i class="bi bi-trash"></i> <span class="d-none d-md-inline">Supprimer</span>
                                         </a>
                                     </div>
+                                </Authorized>
+                            </AuthorizeView>
+
+                            <AuthorizeView>
+                                <Authorized>
                                     <div class="d-flex flex-wrap gap-1 mt-2">
                                         <button class="btn btn-sm btn-outline-success flex-grow-1" @onclick="() => AddToFavorites(resource)">
                                             <i class="bi bi-star"></i>
@@ -224,6 +240,9 @@
                                         </button>
                                     </div>
                                 </Authorized>
+                            </AuthorizeView>
+
+                            <AuthorizeView>
                                 <NotAuthorized>
                                     <div class="d-flex flex-wrap gap-1">
                                         <a href="@($"resources/details?id={resource.Id}")" class="btn btn-sm btn-outline-primary flex-grow-1">
@@ -232,6 +251,7 @@
                                     </div>
                                 </NotAuthorized>
                             </AuthorizeView>
+
                         </div>
                     </div>
                 </div>
