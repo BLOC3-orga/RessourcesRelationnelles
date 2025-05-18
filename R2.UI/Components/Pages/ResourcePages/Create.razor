@@ -97,7 +97,7 @@
 
 @code {
     [SupplyParameterFromForm]
-    private Resource Resource { get; set; } = new();  // Ne pas définir CreationDate ici
+    private Resource Resource { get; set; } = new();
 
     private List<Category>? Categories { get; set; }
 
@@ -106,7 +106,6 @@
         using var context = DbFactory.CreateDbContext();
         Categories = await context.Categories.ToListAsync();
 
-        // Initialiser avec des valeurs par défaut si nécessaire
         if (Resource.Status == 0)
             Resource.Status = ResourceStatus.Private;
 
@@ -141,7 +140,6 @@
     {
         using var context = DbFactory.CreateDbContext();
 
-        // Définir la date de création exactement au moment où la ressource est ajoutée
         Resource.CreationDate = DateTime.Now;
 
         context.Ressources.Add(Resource);

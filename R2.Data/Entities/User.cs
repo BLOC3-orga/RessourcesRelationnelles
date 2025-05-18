@@ -5,7 +5,7 @@ namespace R2.Data.Entities;
 public class User : IdentityUser<int>
 {
     // Ces propriétés sont déjà dans IdentityUser : UserName, Email, PasswordHash
-    // Donc on évite de redéfinir "Password" qui pourrait créer des conflits
+    // Donc ne les redéfinit pas
 
     public string Name { get; set; } = null!;
     public string LastName { get; set; } = null!;
