@@ -77,19 +77,6 @@
                     <div class="form-text">Activez ou désactivez le compte de l'utilisateur.</div>
                 </div>
 
-                @* Commenté pour le moment, mais stylisé pour cohérence
-                <div class="mb-4">
-                    <label for="role" class="form-label fw-bold">Rôle <span class="text-danger">*</span></label>
-                    <InputSelect id="role" @bind-Value="SelectedRole" class="form-select">
-                        @foreach (var role in AvailableRoles)
-                        {
-                            <option value="@role.Name">@role.Name</option>
-                        }
-                    </InputSelect>
-                    <div class="form-text">Le rôle définit les permissions de l'utilisateur sur la plateforme.</div>
-                </div>
-                *@
-
                 <div class="d-flex justify-content-end mt-4">
                     <a href="/users" class="btn btn-outline-secondary me-2">Annuler</a>
                     <button type="submit" class="btn btn-primary">
@@ -108,7 +95,6 @@
     [SupplyParameterFromForm]
     private User? User { get; set; }
 
-    // Propriétés pour gérer les rôles (commentées pour le moment)
     private List<IdentityRole<int>> AvailableRoles = new();
     private string SelectedRole = string.Empty;
     private string OriginalRole = string.Empty;
@@ -124,15 +110,6 @@
             return;
         }
 
-        // Charger les rôles disponibles (commenté pour le moment)
-        // AvailableRoles = await RoleManager.Roles.ToListAsync();
-
-        // Déterminer le rôle actuel de l'utilisateur (commenté pour le moment)
-        /*
-        var userRoles = await UserManager.GetRolesAsync(User);
-        SelectedRole = userRoles.FirstOrDefault() ?? AvailableRoles.FirstOrDefault()?.Name ?? string.Empty;
-        OriginalRole = SelectedRole; // Stocker le rôle original pour le comparer plus tard
-        */
     }
 
     private async Task UpdateUser()
@@ -158,27 +135,6 @@
         try
         {
             await context.SaveChangesAsync();
-
-            // Code pour la gestion des rôles (commenté pour le moment)
-            /*
-            if (SelectedRole != OriginalRole)
-            {
-                var userForRole = await UserManager.FindByIdAsync(User.Id.ToString());
-
-                if (userForRole != null)
-                {
-                    if (!string.IsNullOrEmpty(OriginalRole))
-                    {
-                        await UserManager.RemoveFromRoleAsync(userForRole, OriginalRole);
-                        }
-
-                    if (!string.IsNullOrEmpty(SelectedRole))
-                    {
-                        await UserManager.AddToRoleAsync(userForRole, SelectedRole);
-                        }
-                    }
-                }
-            */
         }
         catch (DbUpdateConcurrencyException)
         {

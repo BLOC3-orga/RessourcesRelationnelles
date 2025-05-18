@@ -137,7 +137,6 @@ else
         var roles = await UserManager.GetRolesAsync(user);
         userRole = roles.FirstOrDefault() ?? "Utilisateur";
 
-        // Vérifier si nous sommes sur la route de confirmation
         var uri = new Uri(NavigationManager.Uri);
         shouldDeleteUser = uri.AbsolutePath.EndsWith($"/confirm");
     }
@@ -160,7 +159,6 @@ else
             errorMessage = string.Empty;
             StateHasChanged();
 
-            // Utiliser UserManager pour supprimer l'utilisateur proprement
             var result = await UserManager.DeleteAsync(user);
 
             if (result.Succeeded)
@@ -182,7 +180,6 @@ else
         }
         catch (Exception ex)
         {
-            // Essayer une méthode alternative
             try
             {
                 using var context = DbFactory.CreateDbContext();

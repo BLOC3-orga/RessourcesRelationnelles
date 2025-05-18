@@ -254,12 +254,12 @@
                     Email = string.Empty;
                     Password = string.Empty;
 
-                    // Ne pas naviguer automatiquement - permettre à l'utilisateur de voir le message de succès
+                    // TODO : Régler le problème de redirection
                     // NavigationManager.NavigateTo("/users");
                 }
                 else
                 {
-                    // Afficher les erreurs d'assignation de rôle
+                    // Affichage des erreurs
                     var roleErrorDetails = string.Join("<br/>", roleResult.Errors.Select(e => e.Description));
                     ErrorMessage = $"Utilisateur créé mais erreur lors de l'assignation du rôle:<br/>{roleErrorDetails}";
                     Logger.LogError($"Erreur lors de l'assignation du rôle: {roleErrorDetails}");
@@ -267,7 +267,7 @@
             }
             else
             {
-                // Afficher toutes les erreurs de façon lisible
+                // Affichage des erreurs
                 var errorDetails = string.Join("<br/>", result.Errors.Select(e => e.Description));
                 ErrorMessage = $"Erreur lors de la création de l'utilisateur:<br/>{errorDetails}";
                 Logger.LogError($"Erreur lors de la création de l'utilisateur: {errorDetails}");

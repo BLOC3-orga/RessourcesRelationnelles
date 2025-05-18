@@ -67,7 +67,7 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<AuthenticationStateProvider, ServerAuthenticationStateProvider>();
 
-// Ajouter le HttpContextAccessor pour permettre aux composants d'accéder à HttpContext
+// HttpContextAccessor pour permettre aux composants d'accéder à HttpContext
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddQuickGridEntityFrameworkAdapter();

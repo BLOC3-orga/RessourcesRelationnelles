@@ -1,4 +1,4 @@
-﻿@page "/statistics"
+﻿@page "/userrights"
 @using Microsoft.EntityFrameworkCore
 @using R2.Data.Entities
 @using R2.Data.Context
@@ -6,13 +6,13 @@
 @inject IDbContextFactory<R2.Data.Context.R2DbContext> DbFactory
 @inject NavigationManager NavigationManager
 
-<PageTitle>Statistiques</PageTitle>
+<PageTitle>Droits utilisateurs</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>Statistiques</h1>
+    <h1>Droits utilisateurs</h1>
     <div>
-        <a href="statistics/create" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Créer une nouvelle statistique
+        <a href="userrights/create" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Créer un nouveau droit
         </a>
     </div>
 </div>
@@ -27,29 +27,28 @@
 }
 else
 {
-    @* LISTE DES STATISTIQUES *@
+    @* LISTE DES DROITS UTILISATEURS *@
     <div class="card shadow-sm">
         <div class="list-group list-group-flush">
-            @foreach (var statistic in statistics)
+            @foreach (var userRight in userRights)
             {
                 <div class="list-group-item list-group-item-action p-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h5 class="mb-1">Statistique #@statistic.Id</h5>
+                            <h5 class="mb-1">@userRight.Label</h5>
                             <p class="small text-muted mb-0">
-                                <i class="bi bi-book"></i> Ressources lues: <span class="badge bg-info">@statistic.RessourcesRead</span>
-                                <span class="ms-3"><i class="bi bi-file-earmark-plus"></i> Ressources créées: <span class="badge bg-success">@statistic.RessourcesCreated</span></span>
+                                <i class="bi bi-shield-lock"></i> ID: @userRight.Id
                             </p>
                         </div>
                         <div>
                             <div class="btn-group btn-group-sm">
-                                <a href="@($"statistics/details?id={statistic.Id}")" class="btn btn-outline-info">
+                                <a href="@($"userrights/details?id={userRight.Id}")" class="btn btn-outline-info">
                                     <i class="bi bi-info-circle"></i> Détails
                                 </a>
-                                <a href="@($"statistics/edit?id={statistic.Id}")" class="btn btn-outline-secondary">
+                                <a href="@($"userrights/edit?id={userRight.Id}")" class="btn btn-outline-secondary">
                                     <i class="bi bi-pencil"></i> Modifier
                                 </a>
-                                <button class="btn btn-outline-danger" @onclick="() => ConfirmDelete(statistic)">
+                                <button class="btn btn-outline-danger" @onclick="() => ConfirmDelete(userRight)">
                                     <i class="bi bi-trash"></i> Supprimer
                                 </button>
                             </div>
@@ -71,14 +70,14 @@ else
                     <button type="button" class="btn-close" @onclick="CancelDelete"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Êtes-vous sûr de vouloir supprimer la statistique <strong>#@statisticToDelete?.Id</strong> ?</p>
+                    <p>Êtes-vous sûr de vouloir supprimer le droit <strong>@userRightToDelete?.Label</strong> ?</p>
                     <p class="text-danger">
-                        <i class="bi bi-exclamation-triangle"></i> Cette action est irréversible et supprimera définitivement ces données statistiques.
+                        <i class="bi bi-exclamation-triangle"></i> Cette action est irréversible et peut affecter les utilisateurs ayant ce droit.
                     </p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" @onclick="CancelDelete">Annuler</button>
-                    <button type="button" class="btn btn-danger" @onclick="DeleteStatistic">Supprimer</button>
+                    <button type="button" class="btn btn-danger" @onclick="DeleteUserRight">Supprimer</button>
                 </div>
             </div>
         </div>
@@ -88,22 +87,22 @@ else
 
 @code {
     private R2DbContext context = default!;
-    private List<Statistic> statistics = new List<Statistic>();
+    private List<UserRight> userRights = new List<UserRight>();
     private bool isLoading = true;
     private bool showDeleteModal = false;
-    private Statistic statisticToDelete;
+    private UserRight userRightToDelete;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
             context = DbFactory.CreateDbContext();
-            // Charger les statistiques
-            statistics = await context.Statistics.ToListAsync();
+            // Charger les droits utilisateurs
+            userRights = await context.UserRights.ToListAsync();
         }
         catch (Exception)
         {
-            Console.WriteLine("Erreur lors du chargement des statistiques.");
+            Console.WriteLine("Erreur lors du chargement des droits utilisateurs.");
         }
         finally
         {
@@ -111,29 +110,29 @@ else
         }
     }
 
-    private void ConfirmDelete(Statistic statistic)
+    private void ConfirmDelete(UserRight userRight)
     {
-        statisticToDelete = statistic;
+        userRightToDelete = userRight;
         showDeleteModal = true;
     }
 
-    private async Task DeleteStatistic()
+    private async Task DeleteUserRight()
     {
-        if (statisticToDelete != null)
+        if (userRightToDelete != null)
         {
-            context.Statistics.Remove(statisticToDelete);
+            context.UserRights.Remove(userRightToDelete);
             await context.SaveChangesAsync();
-            statistics.Remove(statisticToDelete);
+            userRights.Remove(userRightToDelete);
         }
 
         showDeleteModal = false;
-        statisticToDelete = null;
+        userRightToDelete = null;
     }
 
     private void CancelDelete()
     {
         showDeleteModal = false;
-        statisticToDelete = null;
+        userRightToDelete = null;
     }
 
     public async ValueTask DisposeAsync() => await context.DisposeAsync();

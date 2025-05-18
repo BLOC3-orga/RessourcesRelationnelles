@@ -202,10 +202,10 @@
                             <AuthorizeView>
                                 <Authorized>
                                     <div class="d-flex flex-wrap gap-1">
-                                        <a href="@($"resources/details?id={resource.Id}")" class="btn btn-sm btn-outline-primary flex-grow-1">
+                                        <a href="@($"resources/details?id={resource.Id}")" class="btn btn-sm btn-primary flex-grow-1">
                                             <i class="bi bi-eye"></i> <span class="d-none d-md-inline">Afficher</span>
                                         </a>
-                                        <a href="@($"resources/edit?id={resource.Id}")" class="btn btn-sm btn-outline-secondary flex-grow-1">
+                                        <a href="@($"resources/edit?id={resource.Id}")" class="btn btn-sm btn-secondary flex-grow-1">
                                             <i class="bi bi-pencil"></i> <span class="d-none d-md-inline">Modifier</span>
                                         </a>
                                         <a href="@($"resources/delete/{resource.Id}")" class="btn btn-sm btn-outline-danger flex-grow-1">
@@ -214,13 +214,13 @@
                                     </div>
                                     <div class="d-flex flex-wrap gap-1 mt-2">
                                         <button class="btn btn-sm btn-outline-success flex-grow-1" @onclick="() => AddToFavorites(resource)">
-                                            <i class="bi bi-star"></i> <span class="d-none d-md-inline">Favoris</span>
+                                            <i class="bi bi-star"></i>
                                         </button>
                                         <button class="btn btn-sm btn-outline-info flex-grow-1" @onclick="() => MarkAsExploited(resource)">
-                                            <i class="bi bi-check-circle"></i> <span class="d-none d-md-inline">Exploitée</span>
+                                            <i class="bi bi-check-circle"></i>
                                         </button>
                                         <button class="btn btn-sm btn-outline-warning flex-grow-1" @onclick="() => ShareResource(resource)">
-                                            <i class="bi bi-share"></i> <span class="d-none d-md-inline">Partager</span>
+                                            <i class="bi bi-share"></i>
                                         </button>
                                     </div>
                                 </Authorized>
@@ -236,79 +236,6 @@
                     </div>
                 </div>
             }
-        </div>
-    }
-
-    @if (showDeleteModal)
-    {
-        <div class="modal fade show" style="display: block;" tabindex="-1" role="dialog">
-            <div class="modal-dialog modal-dialog-centered" role="document">
-                <div class="modal-content">
-                    <div class="modal-header bg-danger text-white">
-                        <h5 class="modal-title">
-                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                            Confirmer la suppression
-                        </h5>
-                        <button type="button" class="btn-close btn-close-white" @onclick="CancelDelete"></button>
-                    </div>
-                    <div class="modal-body">
-                        @if (isDeleting)
-                        {
-                            <div class="text-center py-4">
-                                <div class="spinner-border text-danger" role="status">
-                                    <span class="visually-hidden">Suppression en cours...</span>
-                                </div>
-                                <p class="mt-2">Suppression en cours...</p>
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="mb-3">
-                                <p>Êtes-vous sûr de vouloir supprimer la ressource <strong>"@resourceToDelete?.Name"</strong> ?</p>
-
-                                @if (relatedItemsCount > 0)
-                                {
-                                    <div class="alert alert-warning">
-                                        <i class="bi bi-exclamation-triangle me-2"></i>
-                                        <strong>Attention :</strong> Cette ressource est utilisée dans @relatedItemsCount élément(s).
-                                        La suppression affectera tous ces éléments liés.
-                                    </div>
-                                }
-
-                                <p class="text-danger">
-                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                                    Cette action est irréversible.
-                                </p>
-                            </div>
-                        }
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" @onclick="CancelDelete" disabled="@isDeleting">
-                            Annuler
-                        </button>
-                        <button type="button" class="btn btn-danger" @onclick="DeleteResource" disabled="@isDeleting">
-                            <i class="bi bi-trash me-1"></i> Supprimer définitivement
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="modal-backdrop fade show"></div>
-    }
-
-    @if (showDeletedToast)
-    {
-        <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 5">
-            <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
-                <div class="toast-header bg-success text-white">
-                    <i class="bi bi-check-circle me-2"></i>
-                    <strong class="me-auto">Suppression réussie</strong>
-                    <button type="button" class="btn-close btn-close-white" @onclick="() => showDeletedToast = false"></button>
-                </div>
-                <div class="toast-body">
-                    La ressource a été supprimée avec succès.
-                </div>
-            </div>
         </div>
     }
 </div>
@@ -443,7 +370,7 @@
                     filteredResources = filteredResources.OrderBy(r => r.CreationDate).ToList();
                     break;
                 default:
-                    // Modifier le comportement par défaut pour utiliser le tri par date décroissante
+                    // Par défaut : tri par date décroissante
                     filteredResources = filteredResources.OrderByDescending(r => r.CreationDate).ToList();
                     break;
             }
@@ -478,56 +405,6 @@
     {
         resourceToDelete = resource;
         showDeleteModal = true;
-    }
-
-    private async Task DeleteResource()
-    {
-        if (resourceToDelete != null)
-        {
-            try
-            {
-                isDeleting = true;
-                StateHasChanged();
-
-                // Supprimer la ressource
-                context.Ressources.Remove(resourceToDelete);
-                await context.SaveChangesAsync();
-
-                // Rafraîchir les données
-                await LoadData();
-
-                // Afficher une notification de succès
-                showDeletedToast = true;
-
-                // Masquer la notification après 5 secondes
-                var timer = new System.Threading.Timer(_ =>
-                {
-                    InvokeAsync(() =>
-                    {
-                        showDeletedToast = false;
-                        StateHasChanged();
-                    });
-                }, null, 5000, Timeout.Infinite);
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Erreur lors de la suppression : {ex.Message}");
-            }
-            finally
-            {
-                isDeleting = false;
-                showDeleteModal = false;
-                resourceToDelete = null;
-                StateHasChanged();
-            }
-        }
-    }
-
-    private void CancelDelete()
-    {
-        showDeleteModal = false;
-        resourceToDelete = null;
-        relatedItemsCount = 0;
     }
 
     // TODO

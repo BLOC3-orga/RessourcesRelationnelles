@@ -139,7 +139,7 @@ else
                                             </button>
                                         }
 
-                                        <!-- Suppression autorisée pour les admins seulement -->
+                                        <!-- Suppression (admins seulement) -->
                                         <div class="dropdown">
                                             <a href="@($"resources/delete/{resource.Id}")" class="btn btn-outline-danger">
                                                 <i class="bi bi-trash"></i> Supprimer
@@ -233,23 +233,15 @@ else
         }
 
         // Chargement des commentaires associés à cette ressource
-        // Note: Nécessite une relation entre Comment et Resource dans le modèle
+        // TODO relation entre Comment et Resource dans le modèle
         comments = await context.Comments
             .Where(c => c.Id == Id) // À adapter selon votre modèle
             .ToListAsync();
 
         // Chargement de la progression de l'utilisateur actuel pour cette ressource
-        // Note: Nécessite une relation entre Progression, User et Resource dans le modèle
+        // TODO relation entre Progression, User et Resource dans le modèle
         progression = await context.Progressions
             .FirstOrDefaultAsync(p => p.Id == Id); // À adapter selon votre modèle
-
-        // Vérification si la ressource est dans les favoris de l'utilisateur actuel
-        // Note: À adapter selon votre modèle de gestion des favoris
-        // isFavorite = await context.UserFavoriteResources...
-
-        // Vérification si la ressource est marquée comme exploitée par l'utilisateur actuel
-        // Note: À adapter selon votre modèle de gestion des ressources exploitées
-        // isExploited = await context.UserExploitedResources...
 
         // Génération de l'URL de partage
         shareUrl = $"{NavigationManager.BaseUri}resources/details?id={Id}";
@@ -344,7 +336,7 @@ else
 
     private void ReplyToComment(Comment comment)
     {
-        // Logique pour répondre à un commentaire
+        // TODO : Logique pour répondre à un commentaire
         newCommentContent = $"En réponse à: {comment.Content}\n";
     }
 
@@ -352,7 +344,7 @@ else
     {
         isFavorite = !isFavorite;
 
-        // Logique pour ajouter/retirer des favoris
+        // TODO : Logique pour ajouter/retirer des favoris
     }
 
     private void ShareResource()
@@ -364,7 +356,7 @@ else
     {
         isExploited = !isExploited;
 
-        // Logique pour marquer comme exploitée/non exploitée
+        // TODO : Logique pour marquer comme exploitée/non exploitée
     }
 
     private async Task PublishResource()
@@ -392,7 +384,7 @@ else
             Percentage = 0,
             Status = ProgressionStatus.InProgress,
             LastInteractionDate = DateTime.Now
-            // Ajouter ici les propriétés nécessaires pour lier la progression à la ressource et à l'utilisateur
+            // TODO : Ajouter propriétés pour lier la progression à la ressource et à l'utilisateur
         };
 
         context.Progressions.Add(progression);
@@ -401,6 +393,6 @@ else
 
     private async Task UpdateProgression()
     {
-        // Ouvrir un dialogue pour mettre à jour la progression
+        // TODO : Ouvrir un dialogue pour mettre à jour la progression
     }
 }
