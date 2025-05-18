@@ -1,9 +1,10 @@
-﻿@page "/resources/create"
+@page "/resources/create"
 @using Microsoft.EntityFrameworkCore
 @using R2.Data.Entities
 @using R2.Data.Enums
 @inject IDbContextFactory<R2.Data.Context.R2DbContext> DbFactory
 @inject NavigationManager NavigationManager
+@rendermode InteractiveServer
 
 <PageTitle>Créer une ressource</PageTitle>
 
@@ -95,8 +96,7 @@
 </div>
 
 @code {
-    [SupplyParameterFromForm]
-    internal Resource Resource { get; set; } = new() { CreationDate = DateTime.Now };
+    private Resource Resource { get; set; } = new();  // Ne pas définir CreationDate ici
 
     internal List<Category>? Categories { get; set; }
 
@@ -139,6 +139,10 @@
     internal async Task AddResource()
     {
         using var context = DbFactory.CreateDbContext();
+
+        // Définir la date de création exactement au moment où la ressource est ajoutée
+        Resource.CreationDate = DateTime.Now;
+
         context.Ressources.Add(Resource);
         await context.SaveChangesAsync();
         NavigationManager.NavigateTo("/resources");
