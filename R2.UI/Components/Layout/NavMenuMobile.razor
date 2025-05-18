@@ -1,0 +1,113 @@
+﻿@namespace R2.UI.Components.Layout
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<div class="mobile-nav-container">
+    <AuthorizeView>
+        <Authorized>
+            <button type="button" class="nav-item" @onclick="GoToProfile">
+                <i class="bi bi-person-circle"></i>
+                <span class="nav-label">Profil</span>
+            </button>
+        </Authorized>
+    </AuthorizeView>
+    <button type="button" class="nav-item" @onclick="GoToResources">
+        <i class="bi bi-collection"></i>
+        <span class="nav-label">Ressources</span>
+    </button>
+
+    <AuthorizeView Roles="Administrateur,Super-Administrateur">
+        <Authorized>
+            <div class="nav-item dropdown">
+                <button type="button" class="nav-item-btn" @onclick="ToggleAdminMenu">
+                    <i class="bi bi-gear"></i>
+                    <span class="nav-label">Admin</span>
+                </button>
+
+                @if (showAdminMenu)
+                {
+                    <div class="dropdown-menu">
+                        <button type="button" class="dropdown-item" @onclick="GoToCategories">
+                            <i class="bi bi-tags"></i> Catégories
+                        </button>
+                        <button type="button" class="dropdown-item" @onclick="GoToUsers">
+                            <i class="bi bi-people"></i> Utilisateurs
+                        </button>
+                        <button type="button" class="dropdown-item" @onclick="GoToUserRights">
+                            <i class="bi bi-shield-lock"></i> Droits
+                        </button>
+                        <button type="button" class="dropdown-item" @onclick="GoToStatistics">
+                            <i class="bi bi-bar-chart"></i> Statistiques
+                        </button>
+                    </div>
+                }
+            </div>
+        </Authorized>
+    </AuthorizeView>
+
+    <AuthorizeView>
+        <Authorized>
+            <button type="button" class="nav-item" @onclick="GoToLogout">
+                <i class="bi bi-box-arrow-right"></i>
+                <span class="nav-label">Déconnexion</span>
+            </button>
+        </Authorized>
+        <NotAuthorized>
+            <button type="button" class="nav-item" @onclick="GoToLogin">
+                <i class="bi bi-box-arrow-in-right"></i>
+                <span class="nav-label">Connexion</span>
+            </button>
+        </NotAuthorized>
+    </AuthorizeView>
+</div>
+
+@code {
+    private bool showAdminMenu = false;
+
+    private void ToggleAdminMenu()
+    {
+        showAdminMenu = !showAdminMenu;
+    }
+
+    private void GoToProfile()
+    {
+        NavigationManager.NavigateTo("profile");
+    }
+
+    private void GoToResources()
+    {
+        NavigationManager.NavigateTo("resources");
+    }
+
+    private void GoToCategories()
+    {
+        NavigationManager.NavigateTo("categories");
+    }
+
+    private void GoToUsers()
+    {
+        NavigationManager.NavigateTo("users");
+    }
+
+    private void GoToUserRights()
+    {
+        NavigationManager.NavigateTo("userrights");
+    }
+
+    private void GoToStatistics()
+    {
+        NavigationManager.NavigateTo("statistics");
+    }
+
+    private void GoToLogout()
+    {
+        NavigationManager.NavigateTo("logout");
+    }
+
+    private void GoToLogin()
+    {
+        NavigationManager.NavigateTo("login");
+    }
+}

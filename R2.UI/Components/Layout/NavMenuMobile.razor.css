@@ -1,0 +1,93 @@
+﻿.mobile-nav-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    height: 100%;
+    width: 100%;
+    padding: 0 0.5rem;
+    background-image: linear-gradient(90deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #d7d7d7;
+    background: transparent;
+    border: none;
+    min-width: 60px;
+    height: 100%;
+    padding: 0.25rem;
+    cursor: pointer;
+}
+
+.nav-item-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #d7d7d7;
+    background: transparent;
+    border: none;
+    min-width: 60px;
+    height: 100%;
+    padding: 0.25rem;
+    cursor: pointer;
+}
+
+    .nav-item:hover, .nav-item:active, .nav-item-btn:hover, .nav-item-btn:active {
+        color: white;
+    }
+
+    .nav-item i, .nav-item-btn i {
+        font-size: 1.3rem;
+        margin-bottom: 0.25rem;
+    }
+
+.nav-label {
+    font-size: 0.7rem;
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* Style pour le menu déroulant admin */
+.dropdown {
+    position: relative;
+}
+
+.dropdown-menu {
+    position: absolute;
+    bottom: 3.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: white;
+    border-radius: 0.25rem;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    min-width: 180px;
+    z-index: 1050;
+    overflow: hidden;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    background: transparent;
+    border: none;
+    color: #212529;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+    .dropdown-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    .dropdown-item i {
+        font-size: 1rem;
+        margin-right: 0.5rem;
+        margin-bottom: 0;
+    }

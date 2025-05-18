@@ -7,13 +7,12 @@
     </div>
 </div>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
-
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+<div class="nav-scrollable">
     <nav class="flex-column">
         <AuthorizeView>
             <Authorized>
                 <div class="user-greeting px-3 py-2 text-white">
+                    <i class="bi bi-person-circle me-2"></i>
                     Bonjour @context.User.Identity?.Name !
                 </div>
                 <div class="nav-divider"></div>
@@ -21,8 +20,8 @@
         </AuthorizeView>
 
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="resources">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Ressources
+            <NavLink class="nav-link" href="resources" Match="NavLinkMatch.All">
+                <i class="bi bi-collection me-2"></i> Ressources
             </NavLink>
         </div>
 
@@ -30,22 +29,22 @@
             <Authorized>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="categories">
-                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Catégories
+                        <i class="bi bi-tags me-2"></i> Catégories
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="users">
-                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Utilisateurs
+                        <i class="bi bi-people me-2"></i> Utilisateurs
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="userrights">
-                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Droits
+                        <i class="bi bi-shield-lock me-2"></i> Droits
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="statistics">
-                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Statistiques
+                        <i class="bi bi-bar-chart me-2"></i> Statistiques
                     </NavLink>
                 </div>
             </Authorized>
@@ -53,35 +52,26 @@
 
         <AuthorizeView>
             <Authorized>
+                <div class="nav-divider"></div>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="logout">
-                        <span class="bi bi-box-arrow-right" aria-hidden="true"></span> Déconnexion
+                        <i class="bi bi-box-arrow-right me-2"></i> Déconnexion
                     </NavLink>
                 </div>
             </Authorized>
             <NotAuthorized>
+                <div class="nav-divider"></div>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="login">
-                        <span class="bi bi-box-arrow-in-right" aria-hidden="true"></span> Connexion
+                        <i class="bi bi-box-arrow-in-right me-2"></i> Connexion
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="register">
-                        <span class="bi bi-person-plus" aria-hidden="true"></span> Inscription
+                        <i class="bi bi-person-plus me-2"></i> Inscription
                     </NavLink>
                 </div>
             </NotAuthorized>
         </AuthorizeView>
     </nav>
 </div>
-
-@code {
-    private bool collapseNavMenu = true;
-
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-
-    private void ToggleNavMenu()
-    {
-        collapseNavMenu = !collapseNavMenu;
-    }
-}
