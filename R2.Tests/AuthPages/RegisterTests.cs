@@ -140,7 +140,7 @@ namespace R2.Tests.Components
             cut.Find("#email").Change("new@example.com");
             cut.Find("#name").Change("John");
             cut.Find("#lastname").Change("Doe");
-            cut.Find("#pseudo").Change("existinguser");  
+            cut.Find("#pseudo").Change("existinguser");
             cut.Find("#password").Change("Test123!");
             cut.Find("#confirmPassword").Change("Test123!");
 
@@ -173,7 +173,7 @@ namespace R2.Tests.Components
 
             var cut = RenderComponent<Register>();
 
-            cut.Find("#email").Change("existing@example.com"); 
+            cut.Find("#email").Change("existing@example.com");
             cut.Find("#name").Change("John");
             cut.Find("#lastname").Change("Doe");
             cut.Find("#pseudo").Change("newuser");
@@ -201,7 +201,7 @@ namespace R2.Tests.Components
             cut.Find("#lastname").Change("Doe");
             cut.Find("#pseudo").Change("testuser");
             cut.Find("#password").Change("Test123!");
-            cut.Find("#confirmPassword").Change("DifferentPassword123!");  
+            cut.Find("#confirmPassword").Change("DifferentPassword123!");
 
             await cut.Find("form").SubmitAsync();
 
@@ -239,7 +239,7 @@ namespace R2.Tests.Components
             cut.Find("#name").Change("John");
             cut.Find("#lastname").Change("Doe");
             cut.Find("#pseudo").Change("testuser");
-            cut.Find("#password").Change("weakpassword");  
+            cut.Find("#password").Change("weakpassword");
             cut.Find("#confirmPassword").Change("weakpassword");
 
             await cut.Find("form").SubmitAsync();
@@ -317,7 +317,7 @@ namespace R2.Tests.Components
             cut.Find("form").Submit();
 
             // Assert - Validatin messages should be displayed
-            var validationMessages = cut.FindAll(".validation-message");
+            var validationMessages = cut.FindAll(".validation-message, .text-danger");
             Assert.True(validationMessages.Count > 0, "Au moins un message de validation devrait être affiché");
 
             var markup = cut.Markup;
@@ -348,8 +348,21 @@ namespace R2.Tests.Components
 
             var submitTask = cut.Find("form").SubmitAsync();
 
-            var buttonText = cut.Find("button[type='submit'] span").TextContent;
-            Assert.Equal("Inscription en cours...", buttonText);
+            // Vérifier la présence de l'indicateur de chargement
+            Assert.Contains("spinner-border", cut.Markup);
+
+            // Rechercher le texte dans les spans du bouton
+            var loadingSpans = cut.FindAll("button[type='submit'] span");
+            var loadingText = "";
+            foreach (var span in loadingSpans)
+            {
+                if (span.TextContent.Contains("Inscription"))
+                {
+                    loadingText = span.TextContent;
+                    break;
+                }
+            }
+            Assert.Contains("Inscription en cours", loadingText);
 
             tcs.SetResult(null);
 

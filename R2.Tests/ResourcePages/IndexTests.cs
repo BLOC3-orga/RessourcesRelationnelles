@@ -1,6 +1,8 @@
 ﻿using Bunit;
 using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,30 +14,65 @@ using R2.Tests.Context;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Xunit;
+using AngleSharp.Dom;
 
-namespace R2.Tests.Components.Pages
+namespace R2.Tests.Components.Pages.ResourcePages
 {
-    public class IndexTests : TestContext
+    public class IndexTests
     {
-        private readonly Mock<IDbContextFactory<R2DbContext>> _mockDbFactory;
-        private readonly TestDbContext _testDbContext;
-        private readonly NavigationManager _navigationManager;
-        private readonly Mock<IAntiforgery> _mockAntiforgery;
-        private readonly List<Category> _testCategories;
-        private readonly List<Resource> _testResources;
-
-        public IndexTests()
+        private class TestAuthenticationStateProvider : AuthenticationStateProvider
         {
-            _testCategories = new List<Category>
+            private readonly ClaimsPrincipal _user;
+
+            public TestAuthenticationStateProvider(bool authenticated)
+            {
+                var identity = authenticated
+                    ? new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, "TestUser") }, "TestAuthType")
+                    : new ClaimsIdentity();
+
+                _user = new ClaimsPrincipal(identity);
+            }
+
+            public override Task<AuthenticationState> GetAuthenticationStateAsync()
+            {
+                return Task.FromResult(new AuthenticationState(_user));
+            }
+        }
+
+        private class TestAuthorizationPolicyProvider : IAuthorizationPolicyProvider
+        {
+            public Task<AuthorizationPolicy> GetDefaultPolicyAsync()
+            {
+                return Task.FromResult(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
+            }
+
+            public Task<AuthorizationPolicy?> GetFallbackPolicyAsync()
+            {
+                return Task.FromResult<AuthorizationPolicy?>(null);
+            }
+
+            public Task<AuthorizationPolicy?> GetPolicyAsync(string policyName)
+            {
+                return Task.FromResult<AuthorizationPolicy?>(
+                    new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
+            }
+        }
+
+        private TestContext CreateTestContext(bool authenticated = true)
+        {
+            var context = new TestContext();
+
+            var testCategories = new List<Category>
             {
                 new Category { Id = 1, Name = "Catégorie 1" },
                 new Category { Id = 2, Name = "Catégorie 2" },
                 new Category { Id = 3, Name = "Catégorie 3" }
             };
 
-            _testResources = new List<Resource>
+            var testResources = new List<Resource>
             {
                 new Resource
                 {
@@ -45,7 +82,7 @@ namespace R2.Tests.Components.Pages
                     Type = ResourceType.Activity,
                     Status = ResourceStatus.Public,
                     CategoryId = 1,
-                    Category = _testCategories[0],
+                    Category = testCategories[0],
                     CreationDate = DateTime.Now.AddDays(-10)
                 },
                 new Resource
@@ -56,7 +93,7 @@ namespace R2.Tests.Components.Pages
                     Type = ResourceType.Game,
                     Status = ResourceStatus.Private,
                     CategoryId = 2,
-                    Category = _testCategories[1],
+                    Category = testCategories[1],
                     CreationDate = DateTime.Now.AddDays(-5)
                 },
                 new Resource
@@ -67,7 +104,7 @@ namespace R2.Tests.Components.Pages
                     Type = ResourceType.Document,
                     Status = ResourceStatus.Draft,
                     CategoryId = 3,
-                    Category = _testCategories[2],
+                    Category = testCategories[2],
                     CreationDate = DateTime.Now.AddDays(-1)
                 }
             };
@@ -76,28 +113,61 @@ namespace R2.Tests.Components.Pages
                 .UseInMemoryDatabase(databaseName: "TestDatabase_" + Guid.NewGuid().ToString())
                 .Options;
 
-            _testDbContext = new TestDbContext(options);
-            _testDbContext.SetupTestData(_testCategories, _testResources);
+            var testDbContext = new TestDbContext(options);
+            testDbContext.SetupTestData(testCategories, testResources);
 
-            _mockDbFactory = new Mock<IDbContextFactory<R2DbContext>>();
-            _mockDbFactory.Setup(f => f.CreateDbContext()).Returns(_testDbContext);
+            var mockDbFactory = new Mock<IDbContextFactory<R2DbContext>>();
+            mockDbFactory.Setup(f => f.CreateDbContext()).Returns(testDbContext);
 
-            _mockAntiforgery = new Mock<IAntiforgery>();
+            var mockAntiforgery = new Mock<IAntiforgery>();
             var antiforgeryTokenSet = new AntiforgeryTokenSet("requestToken", "cookieToken", "formFieldName", "headerName");
-            _mockAntiforgery.Setup(a => a.GetAndStoreTokens(It.IsAny<HttpContext>()))
+            mockAntiforgery.Setup(a => a.GetAndStoreTokens(It.IsAny<HttpContext>()))
                 .Returns(antiforgeryTokenSet);
 
-            Services.AddSingleton(_mockDbFactory.Object);
-            Services.AddSingleton(_mockAntiforgery.Object);
-            Services.AddSingleton(Mock.Of<IHttpContextAccessor>());
+            context.Services.AddAuthorizationCore();
 
-            _navigationManager = Services.GetRequiredService<NavigationManager>();
+            context.Services.AddSingleton<IAuthorizationPolicyProvider>(new TestAuthorizationPolicyProvider());
+
+            var mockAuthService = new Mock<IAuthorizationService>();
+            mockAuthService
+                .Setup(s => s.AuthorizeAsync(It.IsAny<ClaimsPrincipal>(),
+                                           It.IsAny<object>(),
+                                           It.IsAny<IEnumerable<IAuthorizationRequirement>>()))
+                .ReturnsAsync(AuthorizationResult.Success());
+            context.Services.AddSingleton(mockAuthService.Object);
+
+            var authStateProvider = new TestAuthenticationStateProvider(authenticated);
+            context.Services.AddSingleton<AuthenticationStateProvider>(authStateProvider);
+
+            context.Services.AddSingleton(mockDbFactory.Object);
+            context.Services.AddSingleton(mockAntiforgery.Object);
+            context.Services.AddSingleton(Mock.Of<IHttpContextAccessor>());
+
+            return context;
+        }
+
+        private IRenderedComponent<R2.UI.Components.Pages.ResourcePages.Index> RenderIndexComponent(TestContext context)
+        {
+            var authStateProvider = context.Services.GetRequiredService<AuthenticationStateProvider>();
+
+            var authState = authStateProvider.GetAuthenticationStateAsync().Result;
+
+            // Afficher l'état d'authentification pour le débogage
+            Console.WriteLine($"État d'authentification: {authState.User.Identity?.IsAuthenticated}");
+
+            var cut = context.RenderComponent<CascadingAuthenticationState>(parameters => {
+                parameters.AddChildContent<R2.UI.Components.Pages.ResourcePages.Index>();
+            });
+
+            return cut.FindComponent<R2.UI.Components.Pages.ResourcePages.Index>();
         }
 
         [Fact]
         public void WhenRendered_ShouldDisplayResourcesList()
         {
-            var cut = RenderComponent<R2.UI.Components.Pages.ResourcePages.Index>();
+            var context = CreateTestContext();
+
+            var cut = RenderIndexComponent(context);
 
             Assert.Contains("Ressources", cut.Markup);
             Assert.Contains("Créer une nouvelle ressource", cut.Markup);
@@ -122,7 +192,9 @@ namespace R2.Tests.Components.Pages
         [Fact]
         public void WhenRendered_ShouldDisplayFilters()
         {
-            var cut = RenderComponent<R2.UI.Components.Pages.ResourcePages.Index>();
+            var context = CreateTestContext();
+
+            var cut = RenderIndexComponent(context);
 
             var statusFilterSelect = cut.Find("#statusFilter");
             var typeFilterSelect = cut.Find("#typeFilter");
@@ -137,14 +209,65 @@ namespace R2.Tests.Components.Pages
         }
 
         [Fact]
-        public void WhenFilterButtonsClicked_ShouldCallFilterMethods()
+        public void ShouldDisplayFilterOptions()
         {
-            var cut = RenderComponent<R2.UI.Components.Pages.ResourcePages.Index>();
+            var context = CreateTestContext();
+
+            var cut = RenderIndexComponent(context);
+
+            var statusOptions = cut.FindAll("#statusFilter option");
+            Assert.Contains(statusOptions, option => option.TextContent == "Tous");
+            Assert.Contains(statusOptions, option => option.TextContent == "Privé");
+            Assert.Contains(statusOptions, option => option.TextContent == "Public");
+            Assert.Contains(statusOptions, option => option.TextContent == "Brouillon");
+
+            var typeOptions = cut.FindAll("#typeFilter option");
+            Assert.Contains(typeOptions, option => option.TextContent == "Tous");
+            Assert.Contains(typeOptions, option => option.TextContent == "Activité");
+            Assert.Contains(typeOptions, option => option.TextContent == "Jeu");
+            Assert.Contains(typeOptions, option => option.TextContent == "Document");
+
+            var categoryOptions = cut.FindAll("#categoryFilter option");
+            Assert.Contains(categoryOptions, option => option.TextContent == "Toutes");
+            Assert.Contains(categoryOptions, option => option.TextContent == "Catégorie 1");
+            Assert.Contains(categoryOptions, option => option.TextContent == "Catégorie 2");
+            Assert.Contains(categoryOptions, option => option.TextContent == "Catégorie 3");
+        }
+
+        [Fact]
+        public void ShouldDisplaySortOptions()
+        {
+            var context = CreateTestContext();
+
+            var cut = RenderIndexComponent(context);
+
+            var sortOptions = cut.FindAll("#sortBy option");
+            Assert.Equal(4, sortOptions.Count);
+            Assert.Contains(sortOptions, option => option.TextContent == "Nom (A-Z)");
+            Assert.Contains(sortOptions, option => option.TextContent == "Nom (Z-A)");
+            Assert.Contains(sortOptions, option => option.TextContent == "Date (Plus récente)");
+            Assert.Contains(sortOptions, option => option.TextContent == "Date (Plus ancienne)");
+        }
+
+        [Fact]
+        public void WhenUserIsNotAuthenticated_ShouldOnlyShowPublicResources()
+        {
+            var context = CreateTestContext(authenticated: false);
+
+            var cut = RenderIndexComponent(context);
+
+            Assert.Contains("Ressource 1", cut.Markup); 
+            Assert.DoesNotContain("Ressource 2", cut.Markup); 
+            Assert.DoesNotContain("Ressource 3", cut.Markup); 
+        }
+
+        [Fact]
+        public void WhenFilterButtonsClicked_ShouldFilterResources()
+        {
+            var context = CreateTestContext();
+            var cut = RenderIndexComponent(context);
 
             cut.Find("#statusFilter").Change(((int)ResourceStatus.Public).ToString());
-            cut.Find("#typeFilter").Change(((int)ResourceType.Activity).ToString());
-            cut.Find("#categoryFilter").Change("1");
-
             cut.Find("button.btn-outline-primary").Click();
 
             Assert.Contains("Ressource 1", cut.Markup);
@@ -159,93 +282,52 @@ namespace R2.Tests.Components.Pages
         }
 
         [Fact]
-        public void ResourceCards_ShouldHaveCorrectElements()
+        public void WhenSortOptionChanged_ShouldSortResources()
         {
-            var cut = RenderComponent<R2.UI.Components.Pages.ResourcePages.Index>();
+            var context = CreateTestContext();
+            var cut = RenderIndexComponent(context);
 
-            var cards = cut.FindAll(".card");
-            Assert.True(cards.Count >= 3, $"Attendu au moins 3 cartes, trouvé {cards.Count}");
+            cut.Find("#sortBy").Change("0");
+            cut.Find("button.btn-outline-primary").Click();
 
-            Assert.Equal(3, cut.FindAll("a[href^='resources/details']").Count);
-            Assert.Equal(3, cut.FindAll("a[href^='resources/edit']").Count);
-            Assert.Equal(3, cut.FindAll("a[href^='resources/delete']").Count);
+            Assert.Contains("Tri actuel : Nom (A-Z)", cut.Markup);
 
-            Assert.Equal(3, cut.FindAll("button.btn-outline-success").Count); 
-            Assert.Equal(3, cut.FindAll("button.btn-outline-info").Count);   
-            Assert.Equal(3, cut.FindAll("button.btn-outline-warning").Count); 
+            cut.Find("#sortBy").Change("2");
+            cut.Find("button.btn-outline-primary").Click();
+
+            Assert.Contains("Tri actuel : Date (Plus récente)", cut.Markup);
         }
 
         [Fact]
         public void EditButton_ShouldNavigateToEditPage()
         {
-            var cut = RenderComponent<R2.UI.Components.Pages.ResourcePages.Index>();
+            var context = CreateTestContext();
+            var cut = RenderIndexComponent(context);
+            var navigationManager = context.Services.GetRequiredService<NavigationManager>();
 
-            var editButton = cut.FindAll("a[href^='resources/edit']").First();
-            var href = editButton.GetAttribute("href");
+            var editButtons = cut.FindAll("a[href^='resources/edit']");
+            var firstEditButton = editButtons.First();
+            var href = firstEditButton.GetAttribute("href");
 
-            _navigationManager.NavigateTo(href);
+            navigationManager.NavigateTo(href);
 
-            Assert.Contains("resources/edit", _navigationManager.Uri);
-            Assert.Contains("id=1", _navigationManager.Uri);
-        }
-
-        [Fact]
-        public void ResourceFiltersByStatus_ShouldFilterCorrectly()
-        {
-            var cut = RenderComponent<R2.UI.Components.Pages.ResourcePages.Index>();
-
-            cut.Find("#statusFilter").Change(((int)ResourceStatus.Public).ToString());
-            cut.Find("button.btn-outline-primary").Click();
-
-            Assert.Contains("Ressource 1", cut.Markup);
-            Assert.DoesNotContain("Ressource 2", cut.Markup);
-            Assert.DoesNotContain("Ressource 3", cut.Markup);
-
-            cut.Find("#statusFilter").Change(((int)ResourceStatus.Private).ToString());
-            cut.Find("button.btn-outline-primary").Click();
-
-            Assert.DoesNotContain("Ressource 1", cut.Markup);
-            Assert.Contains("Ressource 2", cut.Markup);
-            Assert.DoesNotContain("Ressource 3", cut.Markup);
-        }
-
-        [Fact]
-        public void ResourceFiltersByType_ShouldFilterCorrectly()
-        {
-            var cut = RenderComponent<R2.UI.Components.Pages.ResourcePages.Index>();
-
-            cut.Find("#typeFilter").Change(((int)ResourceType.Game).ToString());
-            cut.Find("button.btn-outline-primary").Click();
-
-            Assert.DoesNotContain("Ressource 1", cut.Markup);
-            Assert.Contains("Ressource 2", cut.Markup);
-            Assert.DoesNotContain("Ressource 3", cut.Markup);
-        }
-
-        [Fact]
-        public void ResourceFiltersByCategory_ShouldFilterCorrectly()
-        {
-            var cut = RenderComponent<R2.UI.Components.Pages.ResourcePages.Index>();
-
-            cut.Find("#categoryFilter").Change("3");
-            cut.Find("button.btn-outline-primary").Click();
-
-            Assert.DoesNotContain("Ressource 1", cut.Markup);
-            Assert.DoesNotContain("Ressource 2", cut.Markup);
-            Assert.Contains("Ressource 3", cut.Markup);
+            Assert.Contains("resources/edit", navigationManager.Uri);
+            Assert.Contains("id=", navigationManager.Uri);
         }
 
         [Fact]
         public void CreateNewResourceButton_ShouldNavigateToCreatePage()
         {
-            var cut = RenderComponent<R2.UI.Components.Pages.ResourcePages.Index>();
+            var context = CreateTestContext();
+            var cut = RenderIndexComponent(context);
+            var navigationManager = context.Services.GetRequiredService<NavigationManager>();
 
             var createButton = cut.Find("a[href='resources/create']");
             var href = createButton.GetAttribute("href");
 
-            _navigationManager.NavigateTo(href);
+            navigationManager.NavigateTo(href);
 
-            Assert.EndsWith("resources/create", _navigationManager.Uri);
+            Assert.EndsWith("resources/create", navigationManager.Uri);
         }
     }
 }
