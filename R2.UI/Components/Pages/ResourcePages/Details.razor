@@ -140,11 +140,11 @@ else
                                         }
 
                                         <!-- Suppression (admins seulement) -->
-                                        <div class="dropdown">
-                                            <a href="@($"resources/delete/{resource.Id}")" class="btn btn-outline-danger">
-                                                <i class="bi bi-trash"></i> Supprimer
-                                            </a>
-                                        </div>
+                                        @* <div class="dropdown"> *@
+                                        @*     <a href="@($"resources/delete/{resource.Id}")" class="btn btn-outline-danger"> *@
+                                        @*         <i class="bi bi-trash"></i> Supprimer *@
+                                        @*     </a> *@
+                                        @* </div> *@
                                     </div>
                                 </div>
                             </div>
@@ -184,6 +184,24 @@ else
                                             <i class="bi bi-play"></i> Démarrer
                                         </button>
                                     }
+                                </div>
+                            </div>
+                        </Authorized>
+                    </AuthorizeView>
+
+                    <AuthorizeView Roles="Administrateur,Super-Administrateur">
+                        <Authorized>
+                            <!-- Actions -->
+                            <div class="card mb-4">
+                                <div class="card-body">
+                                    <div class="d-grid gap-2">
+                                        <!-- Suppression (admins seulement) -->
+                                        <div class="dropdown">
+                                            <a href="@($"resources/delete/{resource.Id}")" class="btn btn-outline-danger">
+                                                <i class="bi bi-trash"></i> Supprimer
+                                            </a>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </Authorized>
@@ -319,9 +337,9 @@ else
         using var context = DbFactory.CreateDbContext();
 
         var comment = new Comment
-        {
-            Content = newCommentContent
-        };
+            {
+                Content = newCommentContent
+            };
 
         context.Comments.Add(comment);
         await context.SaveChangesAsync();
@@ -380,12 +398,12 @@ else
         using var context = DbFactory.CreateDbContext();
 
         progression = new Progression
-        {
-            Percentage = 0,
-            Status = ProgressionStatus.InProgress,
-            LastInteractionDate = DateTime.Now
+            {
+                Percentage = 0,
+                Status = ProgressionStatus.InProgress,
+                LastInteractionDate = DateTime.Now
             // TODO : Ajouter propriétés pour lier la progression à la ressource et à l'utilisateur
-        };
+            };
 
         context.Progressions.Add(progression);
         await context.SaveChangesAsync();
