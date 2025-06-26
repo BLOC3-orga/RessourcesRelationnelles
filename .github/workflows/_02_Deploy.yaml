@@ -1,16 +1,33 @@
-name: 02 - Deploy
+name: 02-2 - Deploy
 
 on:
-  push:
-    branches:
-      - deploiement
+  workflow_call
 
 jobs:
-  DockerBuild:
-    uses: ./.github/workflows/02-1_DockerBuild.yaml
-    secrets: inherit
-
   Deploy:
-    needs: [DockerBuild]
-    uses: ./.github/workflows/02-2_Deploy.yaml
-    secrets: inherit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copy Production Docker Compose
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          port: ${{ secrets.SERVER_PORT }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          source: "./docker-compose.prod.yml"
+          target: "./ressources-relationnelles/"
+
+      - name: Deploy Application
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          port: ${{ secrets.SERVER_PORT }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          script: |
+            cd ressources-relationnelles
+            

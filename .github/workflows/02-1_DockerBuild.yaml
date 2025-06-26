@@ -26,10 +26,26 @@ jobs:
       - name: Downcase Image Name
         run: echo "IMAGE_NAME_LOWER=${GITHUB_REPOSITORY,,}" >> ${GITHUB_ENV}
 
+      - name: Debug - List files
+        run: |
+          echo "=== Contenu du répertoire racine ==="
+          ls -la
+          echo "=== Contenu du dossier R2.UI ==="
+          ls -la R2.UI/
+          echo "=== Vérification du Dockerfile ==="
+          if [ -f "R2.UI/Dockerfile" ]; then
+            echo "Dockerfile trouvé dans R2.UI/"
+            echo "--- Contenu du Dockerfile ---"
+            head -10 R2.UI/Dockerfile
+          else
+            echo "Dockerfile NOT FOUND in R2.UI/"
+          fi
+
       - name: Build and Push
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:latest
-          file: ./Dockerfile
+          file: ./R2.UI/Dockerfile
+          platforms: linux/amd64
