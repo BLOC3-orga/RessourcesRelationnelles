@@ -77,6 +77,36 @@ builder.Services.AddRazorComponents()
 
 var app = builder.Build();
 
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+
+    var contextFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<R2DbContext>>();
+
+    using var context = contextFactory.CreateDbContext();
+
+    try
+    {
+        Console.WriteLine("🔍 Vérification de la base de données...");
+
+        var created = context.Database.EnsureCreated();
+
+        if (created)
+        {
+            Console.WriteLine("✅ Base de données 'RessourcesRelationnelles' créée avec succès !");
+        }
+        else
+        {
+            Console.WriteLine("✅ Base de données 'RessourcesRelationnelles' existe déjà.");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"❌ Erreur lors de la création de la base : {ex.Message}");
+        throw;
+    }
+}
+
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -164,7 +194,6 @@ else
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
-
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseAntiforgery();

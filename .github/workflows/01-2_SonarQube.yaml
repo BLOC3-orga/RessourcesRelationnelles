@@ -1,0 +1,28 @@
+name: 01-2 - Integration SonarQube
+
+on:
+  workflow_call
+
+jobs:
+  QualityUI:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: R2.UI
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ui-coverage-report
+          path: R2/coverage
+
+      - name: SonarCloud
+        uses: SonarSource/sonarcloud-github-action@v3.1.0
+        with:
+          projectBaseDir: ./R2.UI
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_BACK }}

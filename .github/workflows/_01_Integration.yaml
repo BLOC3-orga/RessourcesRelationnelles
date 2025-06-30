@@ -1,0 +1,15 @@
+name: 01 - Integration
+
+on:
+  pull_request:
+    branches:
+      - deploiement
+
+jobs:
+  DotNet_Tests:
+    uses: ./.github/workflows/01-1_DotNetTests.yaml
+
+  Quality_SonarQube:
+    needs: [DotNet_Tests]
+    uses: ./.github/workflows/01-2_SonarQube.yaml
+    secrets: inherit
