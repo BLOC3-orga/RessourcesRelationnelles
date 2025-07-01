@@ -1,0 +1,117 @@
+name: 01-1 - Test DotNet
+
+on:
+  workflow_call
+
+jobs:
+  Helloworld:
+    runs-on: ubuntu-latest
+    steps:
+      - name: test
+        run: echo Hello
+
+  DotNetTests:
+    needs: [Helloworld]
+    runs-on: ubuntu-latest
+    
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: Y
+          SA_PASSWORD: TestPassword123!
+          MSSQL_PID: Express
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd="/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P TestPassword123! -Q 'SELECT 1'"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    env:
+      ConnectionStrings__DefaultConnection: "Server=localhost,1433;Database=RessourcesRelationnellesTest;User Id=sa;Password=TestPassword123!;TrustServerCertificate=true;"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Database Connection Check
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mssql-tools unixodbc-dev
+          /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P TestPassword123! -Q "SELECT @@VERSION"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore
+
+      - name: Create Test Database
+        run: |
+          /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P TestPassword123! -Q "CREATE DATABASE RessourcesRelationnellesTest"
+
+      - name: Run all tests with coverage
+        run: |
+          dotnet test --no-build --verbosity normal \
+            /p:CollectCoverage=true \
+            /p:CoverletOutputFormat=opencover \
+            /p:CoverletOutput=./coverage/
+
+      - name: Upload Coverage Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dotnet-coverage-report
+          path: "**/coverage/"
+          retention-days: 3
+
+  E2ETests:
+    needs: [DotNetTests]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Start Application Container
+        run: |
+          docker compose up -d
+          docker ps -a
+
+      - name: Wait for Application
+        uses: jakejarvis/wait-action@master
+        with:
+          time: '30s'
+
+      - name: Test Application Health
+        run: |
+          curl -f http://localhost:8080/health || exit 1
+
+      - name: Setup .NET for E2E Tests
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Run E2E Tests
+        run: |
+          dotnet test R2.Tests/R2.Tests.csproj \
+            --filter "Category=E2E" \
+            --logger:trx
+
+      - name: Upload E2E Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-test-results
+          path: "**/TestResults/**/*.trx"
+          retention-days: 1
+
+      - name: Clean Docker
+        if: always()
+        run: docker compose down

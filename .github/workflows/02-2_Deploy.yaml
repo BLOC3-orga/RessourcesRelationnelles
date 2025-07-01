@@ -4,32 +4,41 @@ on:
   workflow_call
 
 jobs:
-  Deploy:
+  AzureDeploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      - name: Update Docker Compose
+      - name: Update Compose File
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          port: ${{ secrets.SERVER_PORT }}
-          username: ${{ secrets.SERVER_USERNAME }}
-          password: ${{ secrets.SERVER_PASSWORD }}
-          source: "./docker-compose.yml"
-          target: "./ressources-relationnelles/"
+          host: ${{ secrets.AZURE_HOST }}
+          username: ${{ secrets.AZURE_LOGIN }}
+          port: ${{ secrets.AZURE_PORT }}
+          password: ${{ secrets.AZURE_PWD }}
+          source: "./docker-compose.prod.yml"
+          target: "~/ressources-relationnelles/"
 
-      - name: Deploy Application
+      - name: Deploy to Azure
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          port: ${{ secrets.SERVER_PORT }}
-          username: ${{ secrets.SERVER_USERNAME }}
-          password: ${{ secrets.SERVER_PASSWORD }}
+          host: ${{ secrets.AZURE_HOST }}
+          username: ${{ secrets.AZURE_LOGIN }}
+          port: ${{ secrets.AZURE_PORT }}
+          password: ${{ secrets.AZURE_PWD }}
           script: |
-            cd ressources-relationnelles
+            cd ~/ressources-relationnelles
+            
+            # Login to registry
             echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            # Pull latest image
             docker pull ghcr.io/${{ github.repository_owner }}/$(echo ${{ github.repository }} | cut -d'/' -f2 | tr '[:upper:]' '[:lower:]'):latest
-            docker compose up -d
+            
+            # Update .env file
+            echo "DB_SA_PASSWORD=${{ secrets.DB_SA_PASSWORD }}" > .env
+            
+            # Restart application
+            docker compose -f docker-compose.prod.yml down
+            docker compose -f docker-compose.prod.yml up -d
