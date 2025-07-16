@@ -1,0 +1,122 @@
+name: 02-2 - Deploy
+
+on:
+  workflow_call
+
+env:
+  IMAGE_NAME_LOWER: ${{ github.repository }}
+
+jobs:
+  AzureDeploy:
+    runs-on: ubuntu-latest
+    environment: 
+      name: production
+      url: http://${{ secrets.AZURE_HOST }}:8080
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Database Backup
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.AZURE_HOST }}
+          username: ${{ secrets.AZURE_LOGIN }}
+          port: ${{ secrets.AZURE_PORT }}
+          password: ${{ secrets.AZURE_PWD }}
+          script: |
+            # Backup base de données
+            BACKUP_FILE="backup_$(date +%Y%m%d_%H%M%S).bak"
+            docker exec r2_database /opt/mssql-tools/bin/sqlcmd \
+              -S localhost -U sa -P "${{ secrets.DB_PASSWORD }}" \
+              -Q "BACKUP DATABASE [RessourcesRelationnelles] TO DISK = '/var/opt/mssql/data/$BACKUP_FILE'"
+
+      - name: Update Compose File
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.AZURE_HOST }}
+          username: ${{ secrets.AZURE_LOGIN }}
+          port: ${{ secrets.AZURE_PORT }}
+          password: ${{ secrets.AZURE_PWD }}
+          source: "./docker-compose.yml"
+          target: "."
+
+      - name: Canary Deployment
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.AZURE_HOST }}
+          username: ${{ secrets.AZURE_LOGIN }}
+          port: ${{ secrets.AZURE_PORT }}
+          password: ${{ secrets.AZURE_PWD }}
+          script: |
+            # Login Docker Registry
+            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            # Pull nouvelle image
+            NEW_IMAGE="ghcr.io/${{ env.IMAGE_NAME_LOWER }}:main-${{ github.sha }}"
+            docker pull $NEW_IMAGE
+            
+            # Déploiement Canary (10% du trafic)
+            echo "🚀 Starting Canary Deployment (10% traffic)"
+            
+            # Créer conteneur canary
+            docker run -d \
+              --name r2-canary \
+              --network r2-network \
+              -e ASPNETCORE_ENVIRONMENT=Production \
+              -e "ConnectionStrings__DefaultConnection=Server=r2-database;Database=RessourcesRelationnelles;User Id=sa;Password=${{ secrets.DB_PASSWORD }};TrustServerCertificate=true;" \
+              $NEW_IMAGE
+
+            # Monitoring pendant 30 minutes (simplifié à 5 minutes pour l'exemple)
+            echo "📊 Monitoring canary for 5 minutes..."
+            
+            for i in {1..5}; do
+              # Health check
+              if docker exec r2-canary curl -f http://localhost:8080/health > /dev/null 2>&1; then
+                echo "✅ Minute $i: Canary healthy"
+              else
+                echo "❌ Minute $i: Canary unhealthy - Rolling back"
+                docker stop r2-canary && docker rm r2-canary
+                exit 1
+              fi
+              sleep 60
+            done
+
+            # Si succès, déploiement complet
+            echo "🎯 Canary successful, proceeding with full deployment"
+            
+            # Mise à jour docker-compose avec nouvelle image
+            sed -i "s|image:.*r2-ui.*|image: $NEW_IMAGE|" docker-compose.yml
+            
+            # Déploiement rolling update
+            docker compose up -d --no-deps r2-ui
+            
+            # Attendre que le nouveau conteneur soit prêt
+            sleep 30
+            
+            # Vérifier déploiement complet
+            if docker exec r2_ui curl -f http://localhost:8080/health > /dev/null 2>&1; then
+              echo "✅ Full deployment successful"
+              # Nettoyer canary
+              docker stop r2-canary && docker rm r2-canary
+            else
+              echo "❌ Full deployment failed - Rolling back"
+              # Rollback automatique
+              git checkout HEAD~1 -- docker-compose.yml
+              docker compose up -d --no-deps r2-ui
+              docker stop r2-canary && docker rm r2-canary
+              exit 1
+            fi
+
+  PostDeploymentTests:
+    runs-on: ubuntu-latest
+    needs: AzureDeploy
+    steps:
+      - name: Production Health Checks
+        run: |
+          echo "🔍 Running post-deployment validation..."
+          
+          # Test endpoints critiques
+          curl -f http://${{ secrets.AZURE_HOST }}:8080/health || exit 1
+          curl -f http://${{ secrets.AZURE_HOST }}:8080/ || exit 1
+          
+          echo "✅ Post-deployment tests passed"

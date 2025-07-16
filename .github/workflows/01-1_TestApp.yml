@@ -1,0 +1,77 @@
+name: 01-1 - Test Application
+
+on:
+  workflow_call
+
+jobs:
+  TestDotNet:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Run Unit Tests
+        run: |
+          dotnet test R2.Tests/R2.Tests.csproj \
+            --configuration Release \
+            --no-build \
+            --verbosity normal \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./coverage
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dotnet-coverage-report
+          path: ./coverage
+          retention-days: 3
+
+  TestE2E:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start Docker Compose for E2E
+        run: |
+          cp docker-compose.yml docker-compose-test.yml
+          # Modifier pour utiliser une image de test locale
+          sed -i 's|build:|#build:|' docker-compose-test.yml
+          sed -i 's|context: .|image: mcr.microsoft.com/dotnet/aspnet:8.0|' docker-compose-test.yml
+          docker compose -f docker-compose-test.yml up -d r2-database
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build and Run App for E2E
+        run: |
+          dotnet build --configuration Release
+          dotnet run --project R2.UI/R2.UI.csproj --configuration Release &
+          # Attendre que l'app soit prête
+          sleep 30
+
+      - name: Run E2E Tests (exemple avec curl)
+        run: |
+          # Tests basiques d'endpoints
+          curl -f http://localhost:8080/health || exit 1
+          curl -f http://localhost:8080/ || exit 1
+          echo "✅ E2E tests passed"
+
+      - name: Clean Docker
+        if: always()
+        run: |
+          docker compose -f docker-compose-test.yml down
+          docker system prune -f

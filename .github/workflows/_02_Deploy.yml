@@ -1,0 +1,16 @@
+name: 02 - Deploy
+
+on: 
+  push:
+    branches:
+      - main
+
+jobs:
+  Dockerbuild:
+    uses: ./.github/workflows/02-1_Dockerbuild.yml
+    secrets: inherit
+
+  Deploy:
+    needs: [Dockerbuild]
+    uses: ./.github/workflows/02-2_Deploy.yml
+    secrets: inherit
