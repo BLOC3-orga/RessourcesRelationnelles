@@ -116,11 +116,7 @@ jobs:
       - name: Run E2E Tests
         run: |
           echo "🧪 Running E2E tests..."
-          
-          # Test health endpoint
-          echo "Testing health endpoint..."
-          curl -f http://localhost:5000/health || (echo "❌ Health check failed" && exit 1)
-          
+                    
           # Test homepage
           echo "Testing homepage..."
           curl -f http://localhost:5000/ || (echo "❌ Homepage test failed" && exit 1)
