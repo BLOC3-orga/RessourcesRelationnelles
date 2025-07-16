@@ -10,35 +10,53 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  
+          fetch-depth: 0  # Shallow clones should be disabled for better analysis
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
+      - name: Setup Java (required for SonarCloud)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
       - name: Download Coverage Artifact
         uses: actions/download-artifact@v4
         with:
           name: dotnet-coverage-report
           path: ./coverage
+        continue-on-error: true  # Au cas où les tests n'ont pas généré de couverture
 
       - name: Install SonarCloud scanner
         run: |
           dotnet tool install --global dotnet-sonarscanner
+
+      - name: Restore dependencies
+        run: dotnet restore
 
       - name: Build and analyze
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
+          # Vérifier que le token existe
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo "❌ SONAR_TOKEN is not set!"
+            exit 1
+          fi
+          
+          # Configuration adaptée à votre repository
           dotnet sonarscanner begin \
-            /k:"${{ github.repository_owner }}_ressources-relationnelles" \
+            /k:"${{ github.repository_owner }}_${{ github.event.repository.name }}" \
             /o:"${{ github.repository_owner }}" \
-            /d:sonar.login="${{ secrets.SONAR_TOKEN }}" \
+            /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
             /d:sonar.host.url="https://sonarcloud.io" \
-            /d:sonar.cs.opencover.reportsPaths="coverage/**/coverage.opencover.xml"
+            /d:sonar.cs.opencover.reportsPaths="coverage/**/coverage.opencover.xml" \
+            /d:sonar.exclusions="**/bin/**,**/obj/**,**/*.js,**/*.css"
           
-          dotnet build --configuration Release
+          dotnet build --configuration Release --no-restore
           
-          dotnet sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
+          dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
