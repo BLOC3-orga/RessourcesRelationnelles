@@ -1,7 +1,20 @@
 name: 02-2 - Deploy
 
 on:
-  workflow_call
+  workflow_call:
+    secrets:
+      AZURE_HOST:
+        required: true
+      AZURE_LOGIN:
+        required: true
+      AZURE_PORT:
+        required: true
+      AZURE_PWD:
+        required: true
+      DB_PASSWORD:
+        required: true
+      GITHUB_TOKEN:
+        required: true
 
 env:
   IMAGE_NAME_LOWER: ${{ github.repository }}
