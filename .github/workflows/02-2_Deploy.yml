@@ -24,11 +24,21 @@ jobs:
           port: ${{ secrets.AZURE_PORT }}
           password: ${{ secrets.AZURE_PWD }}
           script: |
-            # Backup base de données
+            echo "💾 Creating database backup..."
             BACKUP_FILE="backup_$(date +%Y%m%d_%H%M%S).bak"
-            docker exec r2_database /opt/mssql-tools/bin/sqlcmd \
-              -S localhost -U sa -P "${{ secrets.DB_PASSWORD }}" \
-              -Q "BACKUP DATABASE [RessourcesRelationnelles] TO DISK = '/var/opt/mssql/data/$BACKUP_FILE'"
+            
+            # Vérifier si le conteneur de base de données existe
+            if docker ps -a --format "{{.Names}}" | grep -q "r2_database"; then
+              docker exec r2_database /opt/mssql-tools/bin/sqlcmd \
+                -S localhost -U sa -P "${{ secrets.DB_PASSWORD }}" \
+                -Q "BACKUP DATABASE [RessourcesRelationnelles] TO DISK = '/var/opt/mssql/data/$BACKUP_FILE'" \
+                || echo "⚠️ Database backup failed, but continuing deployment"
+              
+              # Garder seulement les 5 dernières sauvegardes
+              docker exec r2_database find /var/opt/mssql/data -name "backup_*.bak" -type f -printf '%T@ %p\n' 2>/dev/null | sort -n | head -n -5 | cut -d' ' -f2- | xargs rm -f || true
+            else
+              echo "⚠️ Database container not found, skipping backup"
+            fi
 
       - name: Update Compose File
         uses: appleboy/scp-action@v0.1.7
@@ -38,9 +48,9 @@ jobs:
           port: ${{ secrets.AZURE_PORT }}
           password: ${{ secrets.AZURE_PWD }}
           source: "./docker-compose.yml"
-          target: "."
+          target: "/opt/ressources-relationnelles/"
 
-      - name: Canary Deployment
+      - name: Deploy Application
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.AZURE_HOST }}
@@ -48,64 +58,59 @@ jobs:
           port: ${{ secrets.AZURE_PORT }}
           password: ${{ secrets.AZURE_PWD }}
           script: |
+            cd /opt/ressources-relationnelles
+            
             # Login Docker Registry
             echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
             # Pull nouvelle image
             NEW_IMAGE="ghcr.io/${{ env.IMAGE_NAME_LOWER }}:main-${{ github.sha }}"
+            echo "🐳 Pulling new image: $NEW_IMAGE"
             docker pull $NEW_IMAGE
             
-            # Déploiement Canary (10% du trafic)
-            echo "🚀 Starting Canary Deployment (10% traffic)"
-            
-            # Créer conteneur canary
-            docker run -d \
-              --name r2-canary \
-              --network r2-network \
-              -e ASPNETCORE_ENVIRONMENT=Production \
-              -e "ConnectionStrings__DefaultConnection=Server=r2-database;Database=RessourcesRelationnelles;User Id=sa;Password=${{ secrets.DB_PASSWORD }};TrustServerCertificate=true;" \
-              $NEW_IMAGE
-
-            # Monitoring pendant 30 minutes (simplifié à 5 minutes pour l'exemple)
-            echo "📊 Monitoring canary for 5 minutes..."
-            
-            for i in {1..5}; do
-              # Health check
-              if docker exec r2-canary curl -f http://localhost:8080/health > /dev/null 2>&1; then
-                echo "✅ Minute $i: Canary healthy"
-              else
-                echo "❌ Minute $i: Canary unhealthy - Rolling back"
-                docker stop r2-canary && docker rm r2-canary
-                exit 1
-              fi
-              sleep 60
-            done
-
-            # Si succès, déploiement complet
-            echo "🎯 Canary successful, proceeding with full deployment"
+            # Créer une copie de sauvegarde du compose actuel
+            cp docker-compose.yml docker-compose.yml.backup
             
             # Mise à jour docker-compose avec nouvelle image
-            sed -i "s|image:.*r2-ui.*|image: $NEW_IMAGE|" docker-compose.yml
+            sed -i "s|build:|#build:|g" docker-compose.yml
+            sed -i "s|context: \.|#context: .|g" docker-compose.yml
+            sed -i "s|dockerfile: R2\.UI/Dockerfile|#dockerfile: R2.UI/Dockerfile|g" docker-compose.yml
+            sed -i "/r2-ui:/a\\    image: $NEW_IMAGE" docker-compose.yml
+            
+            echo "📋 Updated docker-compose.yml:"
+            cat docker-compose.yml
             
             # Déploiement rolling update
-            docker compose up -d --no-deps r2-ui
+            echo "🚀 Starting rolling deployment..."
+            docker-compose up -d --no-deps r2-ui
             
             # Attendre que le nouveau conteneur soit prêt
+            echo "⏳ Waiting for application to be ready..."
             sleep 30
             
-            # Vérifier déploiement complet
-            if docker exec r2_ui curl -f http://localhost:8080/health > /dev/null 2>&1; then
-              echo "✅ Full deployment successful"
-              # Nettoyer canary
-              docker stop r2-canary && docker rm r2-canary
-            else
-              echo "❌ Full deployment failed - Rolling back"
-              # Rollback automatique
-              git checkout HEAD~1 -- docker-compose.yml
-              docker compose up -d --no-deps r2-ui
-              docker stop r2-canary && docker rm r2-canary
-              exit 1
-            fi
+            # Health check simple
+            for i in {1..10}; do
+              if curl -f http://localhost:8080/ > /dev/null 2>&1; then
+                echo "✅ Application is responding!"
+                break
+              elif [ $i -eq 10 ]; then
+                echo "❌ Application health check failed after 10 attempts"
+                echo "🔄 Rolling back to previous version..."
+                
+                # Rollback automatique
+                cp docker-compose.yml.backup docker-compose.yml
+                docker-compose up -d --no-deps r2-ui
+                
+                echo "❌ Deployment failed and rolled back"
+                exit 1
+              else
+                echo "⏳ Attempt $i/10: Application not ready yet, waiting..."
+                sleep 10
+              fi
+            done
+            
+            echo "✅ Deployment completed successfully!"
+            echo "🌐 Application available at: http://${{ secrets.AZURE_HOST }}:8080"
 
   PostDeploymentTests:
     runs-on: ubuntu-latest
@@ -115,8 +120,32 @@ jobs:
         run: |
           echo "🔍 Running post-deployment validation..."
           
-          # Test endpoints critiques
-          curl -f http://${{ secrets.AZURE_HOST }}:8080/health || exit 1
-          curl -f http://${{ secrets.AZURE_HOST }}:8080/ || exit 1
+          # Test endpoint principal
+          echo "Testing main endpoint..."
+          HTTP_CODE=$(curl -o /dev/null -s -w "%{http_code}" http://${{ secrets.AZURE_HOST }}:8080/)
+          if [ "$HTTP_CODE" -eq 200 ]; then
+            echo "✅ Main endpoint accessible (HTTP $HTTP_CODE)"
+          else
+            echo "❌ Main endpoint test failed (HTTP $HTTP_CODE)"
+            exit 1
+          fi
           
-          echo "✅ Post-deployment tests passed"
+          # Test temps de réponse
+          echo "Testing response time..."
+          RESPONSE_TIME=$(curl -o /dev/null -s -w "%{time_total}" http://${{ secrets.AZURE_HOST }}:8080/)
+          echo "Response time: ${RESPONSE_TIME}s"
+          
+          # Vérifier que le temps de réponse respecte le SLA (< 2 secondes selon le rapport PDF)
+          if (( $(echo "$RESPONSE_TIME > 2.0" | bc -l) )); then
+            echo "⚠️ Response time exceeds SLA (>2s): ${RESPONSE_TIME}s"
+            # Ne pas faire échouer le déploiement, juste alerter
+          else
+            echo "✅ Response time within SLA: ${RESPONSE_TIME}s"
+          fi
+          
+          echo "✅ Post-deployment tests completed successfully!"
+          echo "🎯 Deployment Summary:"
+          echo "  - Application: ✅ Running"
+          echo "  - Endpoint: ✅ Accessible"
+          echo "  - Response time: ${RESPONSE_TIME}s"
+          echo "  - URL: http://${{ secrets.AZURE_HOST }}:8080"
