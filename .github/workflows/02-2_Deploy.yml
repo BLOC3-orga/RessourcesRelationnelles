@@ -1,4 +1,4 @@
-name: 02-2 - Deploy
+name: 02-2 - Deploy (With Environment)
 
 on:
   workflow_call:
@@ -22,9 +22,6 @@ env:
 jobs:
   AzureDeploy:
     runs-on: ubuntu-latest
-    environment: 
-      name: production
-      url: http://${{ secrets.AZURE_HOST }}:8080
     steps:
       - name: Checkout
         uses: actions/checkout@v4
