@@ -35,7 +35,7 @@ jobs:
             type=ref,event=branch
             type=sha,prefix={{branch}}-
 
-      - name: Build and Push R2 App
+      - name: Build and Push R2 Application
         uses: docker/build-push-action@v5
         with:
           context: .
