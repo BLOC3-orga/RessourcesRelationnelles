@@ -1,48 +1,44 @@
 services:
-  cesizen-database:
-    container_name: cesizen_database
+  r2-database:
+    container_name: r2_database
     image: mcr.microsoft.com/mssql/server:2022-latest
+    user: "0:0"
     environment:
-      SA_PASSWORD: "${DB_PASSWORD}"
+      SA_PASSWORD: "R2SecurePass123!"
       ACCEPT_EULA: "Y"
       MSSQL_PID: "Express"
     ports:
       - "1433:1433"
     volumes:
-      - cesizen_sqldata:/var/opt/mssql/data
-    networks:
-      - cesizen-network
-    restart: unless-stopped
+      - r2_sqldata:/var/opt/mssql/data
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P ${DB_PASSWORD} -Q 'SELECT 1'"]
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P R2SecurePass123! -Q 'SELECT 1'"]
       interval: 30s
       timeout: 10s
       retries: 5
+    networks:
+      - r2-network
 
-  cesizen-app:
-    container_name: cesizen_app
-    image: ghcr.io/${GITHUB_REPOSITORY,,}:latest
-    depends_on:
-      cesizen-database:
-        condition: service_healthy
+  r2-ui:
+    container_name: r2_ui
+    build:
+      context: .
+      dockerfile: R2.UI/Dockerfile
     environment:
-      ASPNETCORE_ENVIRONMENT: "Production"
-      ConnectionStrings__DefaultConnection: "Server=cesizen-database;Database=CESIZenDB;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=true;"
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ConnectionStrings__DefaultConnection=Server=r2-database;Database=RessourcesRelationnelles;User Id=sa;Password=R2SecurePass123!;TrustServerCertificate=true;
     ports:
       - "8080:8080"
+    depends_on:
+      r2-database:
+        condition: service_healthy
     networks:
-      - cesizen-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      - r2-network
 
 volumes:
-  cesizen_sqldata:
-    driver: local
+  r2_sqldata:
 
 networks:
-  cesizen-network:
+  r2-network:
     driver: bridge
