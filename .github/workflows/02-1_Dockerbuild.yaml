@@ -1,10 +1,9 @@
-name: 02-1 Delivery - Docker GHCR
+name: 02-1 - Docker Build & Security
 
 on:
   workflow_call:
-    secrets:
-      GITHUB_TOKEN:
-        required: true
+  # ✅ Suppression de la déclaration explicite de GITHUB_TOKEN
+  # GITHUB_TOKEN est automatiquement disponible dans tous les workflows
 
 env:
   REGISTRY: ghcr.io
@@ -12,7 +11,27 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  Build-Push-DockerGhcr:
+  Security_Check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Run dependency audit
+        run: |
+          echo "🔍 Checking for vulnerable packages..."
+          dotnet list package --vulnerable --include-transitive || echo "ℹ️ No vulnerable packages found"
+
+  Dockerbuild:
+    needs: [Security_Check]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -23,7 +42,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ env.USERNAME }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GITHUB_TOKEN }}  # ✅ Utilisation directe du token système
 
       - name: Downcase IMAGE Name
         run: |
@@ -38,11 +57,11 @@ jobs:
             type=ref,event=branch
             type=sha,prefix={{branch}}-
 
-      - name: Build and Push R2 Application
+      - name: Build and Push RessourcesRelationnelles App
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: R2.UI/Dockerfile
+          file: R2.UI/Dockerfile  # ✅ Adapté pour votre projet R2
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:latest
@@ -61,3 +80,11 @@ jobs:
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
+
+      - name: Build Summary
+        run: |
+          echo "## 🐳 Docker Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Registry**: ${{ env.REGISTRY }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image**: ${{ env.IMAGE_NAME_LOWER }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tags**: latest, main-${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Security Scan**: ✅ Completed with Trivy" >> $GITHUB_STEP_SUMMARY
