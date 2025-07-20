@@ -7,10 +7,10 @@ on:
 
 jobs:
   Test_App:
-    uses: ./.github/workflows/01-1_TestApp.yml
+    uses: ./.github/workflows/01-1_TestApp.yaml
 
   Quality_SonarQube:
     needs: [Test_App]
-    uses: ./.github/workflows/01-2_SonarQube.yml
+    uses: ./.github/workflows/01-2_SonarQube.yaml
     secrets: inherit
 
