@@ -115,7 +115,7 @@ jobs:
           username: ${{ secrets.AZURE_LOGIN }}
           port: ${{ secrets.AZURE_PORT }}
           password: ${{ secrets.AZURE_PWD }}
-          source: "./docker-compose.yml"
+          source: "./docker-compose.yaml"
           target: "/opt/ressources-relationnelles/"
 
       - name: Canary Deployment
