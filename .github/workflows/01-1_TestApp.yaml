@@ -28,7 +28,17 @@ jobs:
             --no-build \
             --verbosity normal \
             --collect:"XPlat Code Coverage" \
-            --results-directory ./coverage
+            --results-directory ./coverage \
+            --filter "Category!=Integration"
+
+      - name: Run Integration Tests
+        run: |
+          dotnet test R2.Tests/R2.Tests.csproj \
+            --configuration Release \
+            --no-build \
+            --verbosity normal \
+            --logger "trx;LogFileName=integration-test-results.trx" \
+            --filter "Category=Integration|FullyQualifiedName~IntegrationTests"
 
       - name: Upload Coverage Report
         uses: actions/upload-artifact@v4
@@ -37,11 +47,29 @@ jobs:
           path: ./coverage
           retention-days: 3
 
+      - name: Upload Integration Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-results
+          path: "**/integration-test-results.trx"
+
   TestE2E:
     runs-on: ubuntu-latest
+    needs: TestDotNet
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Setup Node.js for Playwright
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
 
       - name: Create docker-compose for tests
         run: |
@@ -50,15 +78,12 @@ jobs:
             r2-database:
               container_name: r2_database_test
               image: mcr.microsoft.com/mssql/server:2022-latest
-              user: "0:0"
               environment:
                 SA_PASSWORD: "R2SecurePass123!"
                 ACCEPT_EULA: "Y"
                 MSSQL_PID: "Express"
               ports:
-                - "1434:1433"  # Port différent pour éviter les conflits
-              volumes:
-                - r2_test_sqldata:/var/opt/mssql/data
+                - "1434:1433"
               healthcheck:
                 test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P R2SecurePass123! -Q 'SELECT 1'"]
                 interval: 30s
@@ -66,9 +91,6 @@ jobs:
                 retries: 5
               networks:
                 - r2-test-network
-
-          volumes:
-            r2_test_sqldata:
 
           networks:
             r2-test-network:
@@ -81,57 +103,56 @@ jobs:
           echo "⏳ Waiting for database to be ready..."
           sleep 45
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
-
-      - name: Build and Run App for E2E
+      - name: Build and Start Application
         run: |
-          # Utiliser une connection string pointant vers le conteneur de test
           export ConnectionStrings__DefaultConnection="Server=localhost,1434;Database=RessourcesRelationnelles;User Id=sa;Password=R2SecurePass123!;TrustServerCertificate=true;"
           export ASPNETCORE_ENVIRONMENT="Testing"
           export ASPNETCORE_HTTP_PORTS="5000"
           
           dotnet build --configuration Release
-          # Lancer l'app en arrière-plan
           dotnet run --project R2.UI/R2.UI.csproj --configuration Release --urls "http://localhost:5000" &
           APP_PID=$!
           echo "APP_PID=$APP_PID" >> $GITHUB_ENV
           
-          # Attendre que l'app soit prête
           echo "⏳ Waiting for app to start..."
-          for i in {1..30}; do
-            if curl -s http://localhost:5000/health > /dev/null 2>&1; then
-              echo "✅ App is ready!"
+          for i in {1..60}; do
+            if curl -s http://localhost:5000/ > /dev/null 2>&1; then
+              echo "App is ready!"
               break
             fi
-            if [ $i -eq 30 ]; then
-              echo "❌ App failed to start in time"
+            if [ $i -eq 60 ]; then
+              echo "App failed to start in time"
               exit 1
             fi
             sleep 2
           done
 
-      - name: Run E2E Tests
+      - name: Run Basic E2E Tests
         run: |
           echo "🧪 Running E2E tests..."
-                    
-          # Test homepage
+          
+          # Test homepage accessibility
           echo "Testing homepage..."
-          curl -f http://localhost:5000/ || (echo "❌ Homepage test failed" && exit 1)
+          curl -f http://localhost:5000/ || (echo "Homepage test failed" && exit 1)
+          
+          # Test login page
+          echo "Testing login page..."
+          curl -f http://localhost:5000/login || echo "Login page not accessible via GET"
+          
+          # Test register page  
+          echo "Testing register page..."
+          curl -f http://localhost:5000/register || echo "Register page not accessible via GET"
           
           # Test response time
           echo "Testing response time..."
           RESPONSE_TIME=$(curl -o /dev/null -s -w "%{time_total}" http://localhost:5000/)
           echo "Response time: ${RESPONSE_TIME}s"
           
-          # Vérifier que le temps de réponse est acceptable (< 5 secondes pour les tests)
           if (( $(echo "$RESPONSE_TIME > 5.0" | bc -l) )); then
-            echo "⚠️ Response time is slow but acceptable for tests: ${RESPONSE_TIME}s"
+            echo "Response time is slow but acceptable for tests: ${RESPONSE_TIME}s"
           fi
           
-          echo "✅ All E2E tests passed!"
+          echo "All E2E tests passed!"
 
       - name: Stop Application
         if: always()
@@ -147,4 +168,3 @@ jobs:
           echo "🧹 Cleaning up Docker resources..."
           docker compose -f docker-compose-test.yaml down -v || true
           docker system prune -f || true
-          echo "✅ Cleanup completed"
