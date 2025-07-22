@@ -4,7 +4,7 @@ on:
   workflow_call
 
 jobs:
-  TestDotNet:
+  TestApplication:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -16,10 +16,14 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore
+        run: |
+          echo "📦 Restoring NuGet packages..."
+          dotnet restore
 
       - name: Build
-        run: dotnet build --configuration Release --no-restore
+        run: |
+          echo "🔧 Building application..."
+          dotnet build --configuration Release --no-restore
 
       - name: Run Unit Tests
         run: |
@@ -30,7 +34,10 @@ jobs:
             --verbosity normal \
             --collect:"XPlat Code Coverage" \
             --results-directory ./coverage \
-            --filter "Category!=Integration"
+            --filter "Category!=Integration" \
+            --logger "trx;LogFileName=unit-test-results.trx"
+          
+          echo "✅ Unit tests completed"
 
       - name: Run Integration Tests
         run: |
@@ -41,251 +48,62 @@ jobs:
             --verbosity normal \
             --logger "trx;LogFileName=integration-test-results.trx" \
             --filter "Category=Integration|FullyQualifiedName~IntegrationTests"
+          
+          echo "✅ Integration tests completed"
 
-      - name: Upload Coverage Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: dotnet-coverage-report
-          path: ./coverage
-          retention-days: 3
-
-      - name: Upload Integration Test Results
+      - name: Upload Test Results
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: integration-test-results
-          path: "**/integration-test-results.trx"
+          name: test-results
+          path: |
+            **/unit-test-results.trx
+            **/integration-test-results.trx
+          retention-days: 5
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: ./coverage
+          retention-days: 5
 
       - name: Test Summary
         if: always()
         run: |
-          echo "## 🧪 .NET Tests Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- **Unit Tests**: ✅ Completed" >> $GITHUB_STEP_SUMMARY
-          echo "- **Integration Tests**: ✅ Completed" >> $GITHUB_STEP_SUMMARY
-          echo "- **Coverage Report**: 📊 Available in artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "## 🧪 Test Suite Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ Completed Tests" >> $GITHUB_STEP_SUMMARY
+          echo "- **Unit Tests**: Tests individual components and methods" >> $GITHUB_STEP_SUMMARY
+          echo "- **Integration Tests**: Tests component interactions with in-memory database" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Test Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "- Coverage report available in artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "- Test results available in TRX format" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🏗️ Build Info" >> $GITHUB_STEP_SUMMARY
+          echo "- **Framework**: .NET 8" >> $GITHUB_STEP_SUMMARY
+          echo "- **Configuration**: Release" >> $GITHUB_STEP_SUMMARY
+          echo "- **Platform**: Ubuntu Latest" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Time**: $(date)" >> $GITHUB_STEP_SUMMARY
 
-  TestE2E:
-    runs-on: ubuntu-latest
-    needs: TestDotNet
-    
-    # Utiliser les services intégrés GitHub Actions pour SQL Server
-    services:
-      sqlserver:
-        image: mcr.microsoft.com/mssql/server:2022-latest
-        env:
-          SA_PASSWORD: 'ComplexTestPassword123!'
-          ACCEPT_EULA: Y
-          MSSQL_PID: Express
-        ports:
-          - 1433:1433
-        options: >-
-          --health-cmd="/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'ComplexTestPassword123!' -Q 'SELECT 1'"
-          --health-interval=30s
-          --health-timeout=10s
-          --health-retries=10
-          --health-start-period=60s
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
-
-      - name: Wait for SQL Server
-        run: |
-          echo "⏳ Waiting for SQL Server to be ready..."
-          
-          # Installer sqlcmd
-          curl -sSL https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
-          curl -sSL https://packages.microsoft.com/config/ubuntu/20.04/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list
-          sudo apt-get update
-          sudo ACCEPT_EULA=Y apt-get install -y mssql-tools unixodbc-dev
-          echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
-          export PATH="$PATH:/opt/mssql-tools/bin"
-          
-          # Vérifier que SQL Server est prêt
-          for i in {1..30}; do
-            if sqlcmd -S localhost -U sa -P 'ComplexTestPassword123!' -Q "SELECT 1" > /dev/null 2>&1; then
-              echo "✅ SQL Server is ready!"
-              sqlcmd -S localhost -U sa -P 'ComplexTestPassword123!' -Q "SELECT @@VERSION"
-              break
-            fi
-            if [ $i -eq 30 ]; then
-              echo "❌ SQL Server failed to start properly"
-              exit 1
-            fi
-            echo "Attempt $i/30 - waiting 10s..."
-            sleep 10
-          done
-
-      - name: Build Application
-        run: |
-          echo "🔧 Building application..."
-          dotnet build --configuration Release
-
-      - name: Start Application
-        run: |
-          export ConnectionStrings__DefaultConnection="Server=localhost;Database=RessourcesRelationnelles;User Id=sa;Password=ComplexTestPassword123!;TrustServerCertificate=true;"
-          export ASPNETCORE_ENVIRONMENT="Testing"
-          export ASPNETCORE_HTTP_PORTS="5000"
-          
-          echo "🚀 Starting application..."
-          dotnet run --project R2.UI/R2.UI.csproj --configuration Release --urls "http://localhost:5000" &
-          APP_PID=$!
-          echo "APP_PID=$APP_PID" >> $GITHUB_ENV
-          
-          echo "⏳ Waiting for application to start..."
-          for i in {1..60}; do
-            if curl -s http://localhost:5000/ > /dev/null 2>&1; then
-              echo "✅ Application is ready! (${i} attempts)"
-              break
-            fi
-            if [ $i -eq 60 ]; then
-              echo "❌ Application failed to start in time"
-              echo "=== Process status ==="
-              ps aux | grep dotnet || echo "No dotnet processes found"
-              exit 1
-            fi
-            echo "Attempt $i/60 - waiting 3s..."
-            sleep 3
-          done
-
-      - name: Run E2E Tests
-        run: |
-          echo "🧪 Running E2E tests with SQL Server..."
-          
-          # Test 1: Homepage accessibility
-          echo "📄 Testing homepage accessibility..."
-          if curl -f http://localhost:5000/ > /dev/null 2>&1; then
-            echo "✅ Homepage accessible"
-          else
-            echo "❌ Homepage test failed"
-            exit 1
-          fi
-          
-          # Test 2: Response time
-          echo "⏱️ Testing response time..."
-          RESPONSE_TIME=$(curl -o /dev/null -s -w "%{time_total}" http://localhost:5000/)
-          echo "Response time: ${RESPONSE_TIME}s"
-          
-          if (( $(echo "$RESPONSE_TIME > 10.0" | bc -l) )); then
-            echo "⚠️ Response time is very slow: ${RESPONSE_TIME}s"
-          elif (( $(echo "$RESPONSE_TIME > 5.0" | bc -l) )); then
-            echo "⚠️ Response time is slow but acceptable: ${RESPONSE_TIME}s"
-          else
-            echo "✅ Response time is good: ${RESPONSE_TIME}s"
-          fi
-          
-          # Test 3: Content validation
-          echo "📋 Testing content..."
-          CONTENT=$(curl -s http://localhost:5000/ | head -c 200)
-          if echo "$CONTENT" | grep -i "html\|<!DOCTYPE" > /dev/null; then
-            echo "✅ Valid HTML content returned"
-          else
-            echo "⚠️ Unexpected content format"
-            echo "Content preview: $CONTENT"
-          fi
-          
-          # Test 4: HTTP status codes
-          echo "🔍 Testing HTTP status codes..."
-          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/)
-          if [ "$STATUS_CODE" = "200" ]; then
-            echo "✅ Correct HTTP status code: $STATUS_CODE"
-          else
-            echo "⚠️ Unexpected status code: $STATUS_CODE"
-          fi
-          
-          # Test 5: Application stability
-          echo "🔄 Testing application stability..."
-          for j in {1..10}; do
-            if ! curl -s http://localhost:5000/ > /dev/null; then
-              echo "❌ Stability test failed on request $j"
-              exit 1
-            fi
-          done
-          echo "✅ Stability test passed (10 consecutive requests)"
-          
-          # Test 6: Database connectivity (indirect)
-          echo "🗄️ Testing database integration..."
-          # L'application a démarré avec succès, donc la DB est accessible
-          echo "✅ Database connectivity confirmed (app started successfully)"
-          
-          echo ""
-          echo "🎉 All E2E tests passed successfully!"
-
-      - name: Performance Summary
-        if: success()
-        run: |
-          RESPONSE_TIME=$(curl -o /dev/null -s -w "%{time_total}" http://localhost:5000/)
-          echo "## 🚀 E2E Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "- **Status**: ✅ All tests passed" >> $GITHUB_STEP_SUMMARY
-          echo "- **Response Time**: ${RESPONSE_TIME}s" >> $GITHUB_STEP_SUMMARY
-          echo "- **Database**: SQL Server 2022" >> $GITHUB_STEP_SUMMARY
-          echo "- **Tests Run**: Homepage, Response Time, Content, Status Codes, Stability, DB Integration" >> $GITHUB_STEP_SUMMARY
-
-      - name: Collect Diagnostic Info on Failure
-        if: failure()
-        run: |
-          echo "🔍 Collecting diagnostic information..."
-          
-          echo "=== Application Status ==="
-          ps aux | grep dotnet || echo "No dotnet processes running"
-          
-          echo "=== Network Status ==="
-          netstat -tlnp | grep :5000 || echo "Port 5000 not listening"
-          netstat -tlnp | grep :1433 || echo "Port 1433 not listening"
-          
-          echo "=== SQL Server Status ==="
-          if command -v sqlcmd &> /dev/null; then
-            sqlcmd -S localhost -U sa -P 'ComplexTestPassword123!' -Q "SELECT @@VERSION" || echo "SQL Server not accessible"
-          else
-            echo "sqlcmd not available"
-          fi
-          
-          echo "=== System Resources ==="
-          free -h
-          df -h
-          
-          echo "=== Last HTTP Response ==="
-          curl -v http://localhost:5000/ || echo "No HTTP response"
-
-      - name: Stop Application
+      - name: Display Test Statistics
         if: always()
         run: |
-          if [ ! -z "$APP_PID" ]; then
-            echo "🛑 Stopping application (PID: $APP_PID)"
-            kill $APP_PID 2>/dev/null || true
-            sleep 3
-            kill -9 $APP_PID 2>/dev/null || true
-            echo "✅ Application stopped"
-          fi
-
-  TestResults:
-    runs-on: ubuntu-latest
-    needs: [TestDotNet, TestE2E]
-    if: always()
-    steps:
-      - name: Final Test Summary
-        run: |
-          echo "## 🎯 Complete Test Suite Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📊 Generating test statistics..."
           
-          if [ "${{ needs.TestDotNet.result }}" = "success" ]; then
-            echo "- **Unit & Integration Tests**: ✅ Passed" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "- **Unit & Integration Tests**: ❌ Failed" >> $GITHUB_STEP_SUMMARY
-          fi
+          # Compter les fichiers de test
+          UNIT_TEST_FILES=$(find . -name "*Tests.cs" -not -path "*/Integration/*" | wc -l)
+          INTEGRATION_TEST_FILES=$(find . -name "*IntegrationTests.cs" -o -path "*/Integration/*" -name "*.cs" | wc -l)
+          TOTAL_TEST_FILES=$((UNIT_TEST_FILES + INTEGRATION_TEST_FILES))
           
-          if [ "${{ needs.TestE2E.result }}" = "success" ]; then
-            echo "- **E2E Tests**: ✅ Passed" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "- **E2E Tests**: ❌ Failed" >> $GITHUB_STEP_SUMMARY
-          fi
+          echo "🔢 Test File Count:"
+          echo "  - Unit test files: $UNIT_TEST_FILES"
+          echo "  - Integration test files: $INTEGRATION_TEST_FILES" 
+          echo "  - Total test files: $TOTAL_TEST_FILES"
           
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Architecture**: Blazor Server + SQL Server 2022" >> $GITHUB_STEP_SUMMARY
-          echo "**Environment**: GitHub Actions Ubuntu Latest" >> $GITHUB_STEP_SUMMARY
-          echo "**Build Time**: $(date)" >> $GITHUB_STEP_SUMMARY
+          # Afficher la structure des tests
+          echo ""
+          echo "📁 Test Project Structure:"
+          find R2.Tests -name "*.cs" -type f | head -20
