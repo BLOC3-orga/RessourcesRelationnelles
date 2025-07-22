@@ -22,9 +22,11 @@ services:
 
   r2-ui:
     container_name: r2_ui
+    image: ghcr.io/valentinwlt/r2:latest
+    user: "0:0"
     build:
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Staging
       - ASPNETCORE_HTTP_PORTS=8080
       - ConnectionStrings__DefaultConnection=Server=r2-database;Database=RessourcesRelationnelles;User Id=sa;Password=R2SecurePass123!;TrustServerCertificate=true;
     ports:
