@@ -61,7 +61,7 @@ jobs:
             echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
             # Pull nouvelle image
-            NEW_IMAGE="ghcr.io/${{ env.IMAGE_NAME_LOWER }}:main-${{ github.sha }}"
+            NEW_IMAGE="ghcr.io/${{ env.IMAGE_NAME_LOWER }}:latest"
             echo "Pulling new image: $NEW_IMAGE"
             docker pull $NEW_IMAGE
             
@@ -135,7 +135,7 @@ jobs:
           echo "- **Application**: R2 (Well-being Management)" >> $GITHUB_STEP_SUMMARY
           echo "- **Environment**: Production (Azure VM)" >> $GITHUB_STEP_SUMMARY
           echo "- **Strategy**: Canary Deployment (10% → 100%)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Image**: ghcr.io/${{ env.IMAGE_NAME_LOWER }}:main-${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image**: ghcr.io/${{ env.IMAGE_NAME_LOWER }}:latest" >> $GITHUB_STEP_SUMMARY
           echo "- **Deploy Time**: $(date)" >> $GITHUB_STEP_SUMMARY
           echo "- **URL**: http://${{ secrets.AZURE_HOST }}:8080" >> $GITHUB_STEP_SUMMARY
           echo "- **SLA Target**: < 2 seconds response time" >> $GITHUB_STEP_SUMMARY
