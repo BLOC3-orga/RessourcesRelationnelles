@@ -58,7 +58,7 @@ jobs:
             cd /opt/R2
             
             # Login Docker Registry
-            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
             # Pull nouvelle image
             NEW_IMAGE="ghcr.io/${{ env.IMAGE_NAME_LOWER }}:main-${{ github.sha }}"
@@ -105,7 +105,7 @@ jobs:
                 echo "Container status:"
                 docker ps --filter "name=r2" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
                 echo "Application logs:"
-                docker logs r2_app --tail=20 || true
+                docker logs r2_ui --tail=20 || true
                 echo "Database logs:"
                 docker logs r2_database --tail=20 || true
                 

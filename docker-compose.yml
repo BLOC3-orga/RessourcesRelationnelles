@@ -24,7 +24,6 @@ services:
     container_name: r2_ui
     image: ghcr.io/valentinwlt/r2:latest
     user: "0:0"
-    build:
     environment:
       - ASPNETCORE_ENVIRONMENT=Staging
       - ASPNETCORE_HTTP_PORTS=8080
