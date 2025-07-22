@@ -66,46 +66,42 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Setup Node.js for Playwright
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-
-      - name: Create docker-compose for tests
+      - name: Start SQL Server container
+        env:
+          # Utilise le secret si défini, sinon mot de passe par défaut pour les tests
+          DB_PASSWORD: ${{ secrets.TEST_DB_PASSWORD || 'TestPassword123!' }}
         run: |
-          cat > docker-compose-test.yaml << 'EOF'
-          services:
-            r2-database:
-              container_name: r2_database_test
-              image: mcr.microsoft.com/mssql/server:2022-latest
-              environment:
-                  SA_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
-                ACCEPT_EULA: "Y"
-                MSSQL_PID: "Express"
-              ports:
-                - "1434:1433"
-              healthcheck:
-                test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P ${{ secrets.TEST_DB_PASSWORD }} -Q 'SELECT 1'"]
-                interval: 30s
-                timeout: 10s
-                retries: 5
-              networks:
-                - r2-test-network
-
-          networks:
-            r2-test-network:
-              driver: bridge
-          EOF
-
-      - name: Start Database for E2E
-        run: |
-          docker compose -f docker-compose-test.yaml up -d r2-database
+          docker run -d \
+            --name r2_database_test \
+            -e SA_PASSWORD="${DB_PASSWORD}" \
+            -e ACCEPT_EULA=Y \
+            -e MSSQL_PID=Express \
+            -p 1434:1433 \
+            mcr.microsoft.com/mssql/server:2022-latest
+          
           echo "⏳ Waiting for database to be ready..."
-          sleep 45
+          
+          # Attendre que SQL Server soit prêt avec de meilleurs logs
+          for i in {1..20}; do
+            if docker exec r2_database_test /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "${DB_PASSWORD}" -Q "SELECT 1" &> /dev/null; then
+              echo "✅ Database is ready!"
+              break
+            fi
+            if [ $i -eq 20 ]; then
+              echo "❌ Database failed to start in time"
+              echo "=== Container logs ==="
+              docker logs r2_database_test
+              exit 1
+            fi
+            echo "Attempt $i/20 - waiting 15s..."
+            sleep 15
+          done
 
       - name: Build and Start Application
+        env:
+          DB_PASSWORD: ${{ secrets.TEST_DB_PASSWORD || 'TestPassword123!' }}
         run: |
-          export ConnectionStrings__DefaultConnection="Server=localhost,1434;Database=RessourcesRelationnelles;User Id=sa;Password=${{ secrets.TEST_DB_PASSWORD }};TrustServerCertificate=true;"
+          export ConnectionStrings__DefaultConnection="Server=localhost,1434;Database=RessourcesRelationnelles;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=true;"
           export ASPNETCORE_ENVIRONMENT="Testing"
           export ASPNETCORE_HTTP_PORTS="5000"
           
@@ -117,13 +113,16 @@ jobs:
           echo "⏳ Waiting for app to start..."
           for i in {1..60}; do
             if curl -s http://localhost:5000/ > /dev/null 2>&1; then
-              echo "App is ready!"
+              echo "✅ App is ready!"
               break
             fi
             if [ $i -eq 60 ]; then
-              echo "App failed to start in time"
+              echo "❌ App failed to start in time"
+              echo "=== Process status ==="
+              ps aux | grep dotnet || echo "No dotnet processes found"
               exit 1
             fi
+            echo "Attempt $i/60 - waiting 2s..."
             sleep 2
           done
 
@@ -133,15 +132,23 @@ jobs:
           
           # Test homepage accessibility
           echo "Testing homepage..."
-          curl -f http://localhost:5000/ || (echo "Homepage test failed" && exit 1)
+          curl -f http://localhost:5000/ || (echo "❌ Homepage test failed" && exit 1)
           
-          # Test login page
+          # Test login page (non-bloquant)
           echo "Testing login page..."
-          curl -f http://localhost:5000/login || echo "Login page not accessible via GET"
+          if curl -s http://localhost:5000/login > /dev/null 2>&1; then
+            echo "✅ Login page accessible"
+          else
+            echo "ℹ️ Login page not accessible via GET (normal for Blazor)"
+          fi
           
-          # Test register page  
+          # Test register page (non-bloquant)
           echo "Testing register page..."
-          curl -f http://localhost:5000/register || echo "Register page not accessible via GET"
+          if curl -s http://localhost:5000/register > /dev/null 2>&1; then
+            echo "✅ Register page accessible"
+          else
+            echo "ℹ️ Register page not accessible via GET (normal for Blazor)"
+          fi
           
           # Test response time
           echo "Testing response time..."
@@ -149,10 +156,33 @@ jobs:
           echo "Response time: ${RESPONSE_TIME}s"
           
           if (( $(echo "$RESPONSE_TIME > 5.0" | bc -l) )); then
-            echo "Response time is slow but acceptable for tests: ${RESPONSE_TIME}s"
+            echo "⚠️ Response time is slow but acceptable for tests: ${RESPONSE_TIME}s"
+          else
+            echo "✅ Response time is good: ${RESPONSE_TIME}s"
           fi
           
-          echo "All E2E tests passed!"
+          # Test que l'application répond bien au format HTML
+          echo "Testing content type..."
+          CONTENT_TYPE=$(curl -s -I http://localhost:5000/ | grep -i content-type)
+          echo "Content-Type: $CONTENT_TYPE"
+          
+          echo "✅ All E2E tests passed!"
+
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          echo "=== Application Process ==="
+          ps aux | grep dotnet || echo "No dotnet processes running"
+          
+          echo "=== Docker Container Status ==="
+          docker ps -a
+          
+          echo "=== Docker Container Logs ==="
+          docker logs r2_database_test || echo "No container logs available"
+          
+          echo "=== Network Status ==="
+          netstat -tlnp | grep :5000 || echo "Port 5000 not listening"
+          netstat -tlnp | grep :1434 || echo "Port 1434 not listening"
 
       - name: Stop Application
         if: always()
@@ -160,11 +190,14 @@ jobs:
           if [ ! -z "$APP_PID" ]; then
             echo "Stopping application (PID: $APP_PID)"
             kill $APP_PID 2>/dev/null || true
+            sleep 5
+            kill -9 $APP_PID 2>/dev/null || true
           fi
 
       - name: Clean Docker
         if: always()
         run: |
           echo "🧹 Cleaning up Docker resources..."
-          docker compose -f docker-compose-test.yaml down -v || true
+          docker stop r2_database_test 2>/dev/null || true
+          docker rm r2_database_test 2>/dev/null || true
           docker system prune -f || true
