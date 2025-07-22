@@ -73,13 +73,13 @@ jobs:
       sqlserver:
         image: mcr.microsoft.com/mssql/server:2022-latest
         env:
-          SA_PASSWORD: ${{ secrets.TEST_DB_PASSWORD || 'ComplexTestPassword123!' }}
+          SA_PASSWORD: 'ComplexTestPassword123!'
           ACCEPT_EULA: Y
           MSSQL_PID: Express
         ports:
           - 1433:1433
         options: >-
-          --health-cmd="/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P '${{ secrets.TEST_DB_PASSWORD || 'ComplexTestPassword123!' }}' -Q 'SELECT 1'"
+          --health-cmd="/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'ComplexTestPassword123!' -Q 'SELECT 1'"
           --health-interval=30s
           --health-timeout=10s
           --health-retries=10
@@ -95,8 +95,6 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Wait for SQL Server
-        env:
-          DB_PASSWORD: ${{ secrets.TEST_DB_PASSWORD || 'ComplexTestPassword123!' }}
         run: |
           echo "⏳ Waiting for SQL Server to be ready..."
           
@@ -110,9 +108,9 @@ jobs:
           
           # Vérifier que SQL Server est prêt
           for i in {1..30}; do
-            if sqlcmd -S localhost -U sa -P "${DB_PASSWORD}" -Q "SELECT 1" > /dev/null 2>&1; then
+            if sqlcmd -S localhost -U sa -P 'ComplexTestPassword123!' -Q "SELECT 1" > /dev/null 2>&1; then
               echo "✅ SQL Server is ready!"
-              sqlcmd -S localhost -U sa -P "${DB_PASSWORD}" -Q "SELECT @@VERSION"
+              sqlcmd -S localhost -U sa -P 'ComplexTestPassword123!' -Q "SELECT @@VERSION"
               break
             fi
             if [ $i -eq 30 ]; then
@@ -129,10 +127,8 @@ jobs:
           dotnet build --configuration Release
 
       - name: Start Application
-        env:
-          DB_PASSWORD: ${{ secrets.TEST_DB_PASSWORD || 'ComplexTestPassword123!' }}
         run: |
-          export ConnectionStrings__DefaultConnection="Server=localhost;Database=RessourcesRelationnelles;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=true;"
+          export ConnectionStrings__DefaultConnection="Server=localhost;Database=RessourcesRelationnelles;User Id=sa;Password=ComplexTestPassword123!;TrustServerCertificate=true;"
           export ASPNETCORE_ENVIRONMENT="Testing"
           export ASPNETCORE_HTTP_PORTS="5000"
           
@@ -244,7 +240,7 @@ jobs:
           
           echo "=== SQL Server Status ==="
           if command -v sqlcmd &> /dev/null; then
-            sqlcmd -S localhost -U sa -P '${{ secrets.TEST_DB_PASSWORD || 'ComplexTestPassword123!' }}' -Q "SELECT @@VERSION" || echo "SQL Server not accessible"
+            sqlcmd -S localhost -U sa -P 'ComplexTestPassword123!' -Q "SELECT @@VERSION" || echo "SQL Server not accessible"
           else
             echo "sqlcmd not available"
           fi
