@@ -20,7 +20,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ env.USERNAME }}
-          password: ${{ secrets.GOLF_TOKEN }}
+          password: ${{ secrets.GHCR_TOKEN }}
 
       - name: Downcase IMAGE Name
         run: |
