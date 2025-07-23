@@ -6,6 +6,12 @@ on:
       - main
 
 jobs:
+  SnykSecurity:
+    uses: ./.github/workflows/01-4_Snyk.yaml
+    with:
+      scan_type: 'dependencies' 
+    secrets: inherit
+
   Dockerbuild:
     uses: ./.github/workflows/02-1_Dockerbuild.yaml 
     secrets: inherit
