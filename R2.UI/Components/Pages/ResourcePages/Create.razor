@@ -149,72 +149,72 @@
 
 
     // [clean] Méthode booléenne très simple
-    // internal bool IsEven(int number)
-    // {
-    //     return number % 2 == 0;
-    // }
+    internal bool IsEven(int number)
+    {
+        return number % 2 == 0;
+    }
 
     // [dirty] Méthode booléenne super complexe et inutile
-    internal bool check(int x)
-    {
-        bool result = false;
-        int temp = x;
-        int unused = 42; // Variable inutilisée
+    // internal bool check(int x)
+    // {
+    //     bool result = false;
+    //     int temp = x;
+    //     int unused = 42; Variable inutilisée
 
-        if (x == 0)
-        {
-            result = true;
-        }
-        else if (x == 2)
-        {
-            result = true;
-        }
-        else if (x == 4)
-        {
-            result = true;
-        }
-        else if (x == 6)
-        {
-            result = true;
-        }
-        else if (x == 8)
-        {
-            result = true;
-        }
-        else if (x == 10)
-        {
-            result = true;
-        }
-        else if (x > 10)
-        {
-            if (x % 2 == 0)
-            {
-                result = true;
-            }
-            else
-            {
-                result = false;
-            }
-        }
-        else
-        {
-            if (x < 0)
-            {
-                if (x % 2 == 0)
-                {
-                    result = true;
-                }
-                else
-                {
-                    result = false;
-                }
-            }
-            else
-            {
-                result = false;
-            }
-        }
+    //     if (x == 0)
+    //     {
+    //         result = true;
+    //     }
+    //     else if (x == 2)
+    //     {
+    //         result = true;
+    //     }
+    //     else if (x == 4)
+    //     {
+    //         result = true;
+    //     }
+    //     else if (x == 6)
+    //     {
+    //         result = true;
+    //     }
+    //     else if (x == 8)
+    //     {
+    //         result = true;
+    //     }
+    //     else if (x == 10)
+    //     {
+    //         result = true;
+    //     }
+    //     else if (x > 10)
+    //     {
+    //         if (x % 2 == 0)
+    //         {
+    //             result = true;
+    //         }
+    //         else
+    //         {
+    //             result = false;
+    //         }
+    //     }
+    //     else
+    //     {
+    //         if (x < 0)
+    //         {
+    //             if (x % 2 == 0)
+    //             {
+    //                 result = true;
+    //             }
+    //             else
+    //             {
+    //                 result = false;
+    //             }
+    //         }
+    //         else
+    //         {
+    //             result = false;
+    //         }
+    //     }
 
-        return result;
-    }
+    //     return result;
+    // }
 }
