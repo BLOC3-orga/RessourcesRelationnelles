@@ -146,4 +146,11 @@
         await context.SaveChangesAsync();
         NavigationManager.NavigateTo("/resources");
     }
+
+
+    // [clean] Méthode booléenne très simple
+    internal static bool IsEven(int number)
+    {
+        return number % 2 == 0;
+    }
 }
